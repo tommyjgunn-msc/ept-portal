@@ -205,3 +205,31 @@ export async function getBookingsCount() {
     throw error;
   }
 }
+
+export async function getTestForDate(date) {
+  try {
+    const testDate = new Date(date);
+    const dateString = `${testDate.getFullYear()}${String(testDate.getMonth() + 1).padStart(2, '0')}${String(testDate.getDate()).padStart(2, '0')}`;
+    
+    const testIds = [
+      `reading_${dateString}`,
+      `listening_${dateString}`,
+      `writing_${dateString}`
+    ];
+
+    const sheets = await getGoogleSheets();
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      range: 'Tests!A2:G',
+    });
+
+    const tests = response.data.values || [];
+    // Find tests matching our testIds
+    const todaysTests = tests.filter(test => testIds.includes(test[0])); // test[0] is test_id
+
+    return todaysTests;
+  } catch (error) {
+    console.error('Error fetching tests:', error);
+    throw error;
+  }
+}

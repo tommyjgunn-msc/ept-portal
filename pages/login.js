@@ -8,46 +8,50 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
-  // Your existing handleSubmit function remains exactly the same
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setIsLoading(true);
-    try {
-      const authResponse = await fetch('/api/auth', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ eptId }),
-      });
-      const authData = await authResponse.json();
-      if (!authResponse.ok) {
-        throw new Error(authData.message || 'Authentication failed');
-      }
-      sessionStorage.setItem('userData', JSON.stringify(authData));
-      
-      const bookingResponse = await fetch('/api/check-registration', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ eptId }),
-      });
-      const bookingData = await bookingResponse.json();
-      if (bookingData.hasRegistration) {
-        sessionStorage.setItem('bookingDetails', JSON.stringify(bookingData.registration));
-        router.push('/home');
-      } else {
-        router.push('/booking');
-      }
-    } catch (error) {
-      console.error('Login error:', error);
-      setError(error.message || 'Failed to authenticate');
-    } finally {
-      setIsLoading(false);
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setError('');
+  setIsLoading(true);
+  try {
+    const authResponse = await fetch('/api/auth', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ eptId }),
+    });
+    const authData = await authResponse.json();
+    if (!authResponse.ok) {
+      throw new Error(authData.message || 'Authentication failed');
     }
-  };
+    sessionStorage.setItem('userData', JSON.stringify(authData));
+    
+    const bookingResponse = await fetch('/api/check-registration', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ eptId }),
+    });
+    const bookingData = await bookingResponse.json();
+    
+    if (bookingData.hasRegistration) {
+      sessionStorage.setItem('bookingDetails', JSON.stringify(bookingData.registration));
+      if (bookingData.hasCompletedTests) {
+        router.push('/test-complete');
+      } else {
+        router.push('/home');
+      }
+    } else {
+      router.push('/booking');
+    }
+  } catch (error) {
+    console.error('Login error:', error);
+    setError(error.message || 'Failed to authenticate');
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-indigo-600 px-4">

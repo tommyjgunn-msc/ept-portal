@@ -1,5 +1,5 @@
 // pages/booking.js
-import React, { useState, useEffect } from 'react';  // Change this line
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { isWithinThreeWeeks } from '../utils/dateUtils';
 
@@ -19,35 +19,57 @@ export default function Booking() {
   const router = useRouter();
   const [availableSpots, setAvailableSpots] = useState({});
   const [dateCapacity, setDateCapacity] = useState({});
-
-  const getAvailableSpots = (date, hasLaptop) => {
-    const booked = dateCapacity[date] || { withLaptop: 0, withoutLaptop: 0 };
-    return hasLaptop ? 
-      75 - (booked.withLaptop || 0) : 
-      25 - (booked.withoutLaptop || 0);
+  const [regularDates, setRegularDates] = useState([]); // Add state for regular dates
+  const [refugeeDates, setRefugeeDates] = useState([]); // Add state for refugee dates
+  const validateEmail = (email) => {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(String(email).toLowerCase());
   };
 
- 
-  const regularDates = [
-    { date: 'Friday, 7 February', venues: 4, capacity: { withLaptop: 75, withoutLaptop: 25 } },
-    { date: 'Friday, 14 February', venues: 4, capacity: { withLaptop: 75, withoutLaptop: 25 } },
-    { date: 'Friday, 21 February', venues: 4, capacity: { withLaptop: 75, withoutLaptop: 25 } },
-    { date: 'Friday, 28 February', venues: 4, capacity: { withLaptop: 75, withoutLaptop: 25 } },
-    { date: 'Friday, 7 March', venues: 4, capacity: { withLaptop: 75, withoutLaptop: 25 } },
-    { date: 'Friday, 10 March', venues: 4, capacity: { withLaptop: 75, withoutLaptop: 25 } },
-    { date: 'Friday, 14 March', venues: 4, capacity: { withLaptop: 75, withoutLaptop: 25 } },
-    { date: 'Friday, 28 March', venues: 4, capacity: { withLaptop: 75, withoutLaptop: 25 } },
-    { date: 'Friday, 23 April', venues: 4, capacity: { withLaptop: 75, withoutLaptop: 25 } },
-    { date: 'Friday, 2 May', venues: 4, capacity: { withLaptop: 75, withoutLaptop: 25 } },
-    { date: 'Friday, 5 May', venues: 4, capacity: { withLaptop: 75, withoutLaptop: 25 } },
-    { date: 'Friday, 9 May', venues: 4, capacity: { withLaptop: 75, withoutLaptop: 25 } },
-  ];
+  // Fetch test dates from API
+  useEffect(() => {
+    async function fetchTestDates() {
+      try {
+        const response = await fetch('/api/test-dates');
+        if (response.ok) {
+          const { regularDates, refugeeDates } = await response.json();
+          setRegularDates(regularDates);
+          setRefugeeDates(refugeeDates);
+        }
+      } catch (error) {
+        console.error('Error fetching test dates:', error);
+      }
+    }
+    fetchTestDates();
+  }, []);
 
-  const refugeeDates = [
-    { date: 'Friday, 21 March', location: 'REFUGEE CAMP ON-SITE TESTING' },
-    { date: 'Friday, 11 April', location: 'REFUGEE CAMP ON-SITE TESTING' },
-    { date: 'Friday, 25 April', location: 'REFUGEE CAMP ON-SITE TESTING' },
-  ];
+  // Fetch booking counts (existing code)
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const response = await fetch('/api/bookings/count');
+        if (response.ok) {
+          const data = await response.json();
+          setDateCapacity(data);
+          setAvailableSpots(data);
+        }
+      } catch (error) {
+        console.error('Error fetching bookings:', error);
+      }
+    }
+    fetchData();
+  }, []);
+
+  // Calculate available spots dynamically
+  const getAvailableSpots = (date, hasLaptop) => {
+    const dateConfig = regularDates.find(d => d.date === date);
+    if (!dateConfig) return 0; // Fallback if date not found
+
+    const booked = dateCapacity[date] || { withLaptop: 0, withoutLaptop: 0 };
+    return hasLaptop
+      ? dateConfig.capacity.withLaptop - booked.withLaptop
+      : dateConfig.capacity.withoutLaptop - booked.withoutLaptop;
+  };
 
   useEffect(() => {
     async function fetchData() {
@@ -55,7 +77,6 @@ export default function Booking() {
         const response = await fetch('/api/bookings/count');
         if (response.ok) {
           const data = await response.json();
-          console.log('Received booking counts:', data); // Added this line for debugging
           setDateCapacity(data);
           setAvailableSpots(data);
         }
@@ -69,11 +90,17 @@ export default function Booking() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+  
+    // Validate email before proceeding
+    if (!validateEmail(formData.email)) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+  
     if (step < 5) {
       setStep(step + 1);
       return;
     }
-  
     // Get user data from session storage
     const userData = JSON.parse(sessionStorage.getItem('userData'));
     if (!userData) {
@@ -91,8 +118,6 @@ export default function Booking() {
         eptId: userData.eptId,
       };
       
-      console.log('Submitting data:', submissionData);
-      
       const response = await fetch('/api/booking', {
         method: 'POST',
         headers: {
@@ -102,7 +127,6 @@ export default function Booking() {
       });
   
       const data = await response.json();
-      console.log('Response:', data);
   
       if (!response.ok) {
         throw new Error(data.message || 'Failed to create booking');
@@ -197,25 +221,31 @@ export default function Booking() {
           {step === 2 && (
             <div>
               <h3 className="text-lg font-medium mb-4">Are you a refugee?</h3>
-              <div className="space-y-2">
-                <button
-                  type="button"
-                  className={`w-full p-3 text-left rounded-lg border ${
-                    formData.isRefugee === true ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300'
-                  }`}
-                  onClick={() => updateFormData('isRefugee', true)}
-                >
-                  Yes, I am a refugee
-                </button>
-                <button
-                  type="button"
-                  className={`w-full p-3 text-left rounded-lg border ${
-                    formData.isRefugee === false ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300'
-                  }`}
-                  onClick={() => updateFormData('isRefugee', false)}
-                >
-                  No, I am not a refugee
-                </button>
+              <div role="radiogroup" aria-labelledby="refugee-question">
+                <div className="space-y-2">
+                  <label className="flex items-center p-3 border border-gray-300 rounded-lg hover:border-indigo-500">
+                    <input
+                      type="radio"
+                      name="isRefugee"
+                      value="true"
+                      checked={formData.isRefugee === true}
+                      onChange={() => updateFormData('isRefugee', true)}
+                      className="form-radio h-4 w-4 text-indigo-600"
+                    />
+                    <span className="ml-2">Yes, I am a refugee</span>
+                  </label>
+                  <label className="flex items-center p-3 border border-gray-300 rounded-lg hover:border-indigo-500">
+                    <input
+                      type="radio"
+                      name="isRefugee"
+                      value="false"
+                      checked={formData.isRefugee === false}
+                      onChange={() => updateFormData('isRefugee', false)}
+                      className="form-radio h-4 w-4 text-indigo-600"
+                    />
+                    <span className="ml-2">No, I am not a refugee</span>
+                  </label>
+                </div>
               </div>
             </div>
           )}
@@ -224,25 +254,31 @@ export default function Booking() {
           {step === 3 && !formData.isRefugee && (
             <div>
               <h3 className="text-lg font-medium mb-4">Do you have access to a laptop?</h3>
-              <div className="space-y-2">
-                <button
-                  type="button"
-                  className={`w-full p-3 text-left rounded-lg border ${
-                    formData.hasLaptop === true ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300'
-                  }`}
-                  onClick={() => updateFormData('hasLaptop', true)}
-                >
-                  Yes, I have a laptop
-                </button>
-                <button
-                  type="button"
-                  className={`w-full p-3 text-left rounded-lg border ${
-                    formData.hasLaptop === false ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300'
-                  }`}
-                  onClick={() => updateFormData('hasLaptop', false)}
-                >
-                  No, I need a computer lab
-                </button>
+              <div role="radiogroup" aria-labelledby="laptop-question">
+                <div className="space-y-2">
+                  <label className="flex items-center p-3 border border-gray-300 rounded-lg hover:border-indigo-500">
+                    <input
+                      type="radio"
+                      name="hasLaptop"
+                      value="true"
+                      checked={formData.hasLaptop === true}
+                      onChange={() => updateFormData('hasLaptop', true)}
+                      className="form-radio h-4 w-4 text-indigo-600"
+                    />
+                    <span className="ml-2">Yes, I have a laptop</span>
+                  </label>
+                  <label className="flex items-center p-3 border border-gray-300 rounded-lg hover:border-indigo-500">
+                    <input
+                      type="radio"
+                      name="hasLaptop"
+                      value="false"
+                      checked={formData.hasLaptop === false}
+                      onChange={() => updateFormData('hasLaptop', false)}
+                      className="form-radio h-4 w-4 text-indigo-600"
+                    />
+                    <span className="ml-2">No, I need a computer lab</span>
+                  </label>
+                </div>
               </div>
             </div>
           )}

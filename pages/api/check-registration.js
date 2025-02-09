@@ -11,29 +11,45 @@ export default async function handler(req, res) {
     const sheets = await getGoogleSheets();
     
     // Check Bookings sheet for existing registration
-    const response = await sheets.spreadsheets.values.get({
+    const bookingsResponse = await sheets.spreadsheets.values.get({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
       range: 'Bookings!A2:F',
     });
 
-    const bookings = response.data.values || [];
-    const existingBooking = bookings.find(booking => booking[2] === eptId); // Assuming EPTID is in column C
+    const bookings = bookingsResponse.data.values || [];
+    const existingBooking = bookings.find(booking => booking[2] === eptId);
+
+    // Check Submissions sheet for completed tests
+    const submissionsResponse = await sheets.spreadsheets.values.get({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      range: 'Submissions!A2:G',
+    });
+
+    const submissions = submissionsResponse.data.values || [];
+    const userSubmissions = submissions.filter(row => row[1] === eptId);
+    const hasCompletedTests = userSubmissions.length > 0;
 
     if (existingBooking) {
+      const registrationData = {
+        name: existingBooking[0],
+        email: existingBooking[1],
+        eptId: existingBooking[2],
+        isRefugee: existingBooking[3] === 'Yes',
+        hasLaptop: existingBooking[4] === 'Yes',
+        selectedDate: existingBooking[5]
+      };
+
       return res.status(200).json({
         hasRegistration: true,
-        registration: {
-          name: existingBooking[0],
-          email: existingBooking[1],
-          eptId: existingBooking[2],
-          isRefugee: existingBooking[3] === 'Yes',
-          hasLaptop: existingBooking[4] === 'Yes',
-          selectedDate: existingBooking[5]
-        }
+        hasCompletedTests,
+        registration: registrationData
       });
     }
 
-    return res.status(200).json({ hasRegistration: false });
+    return res.status(200).json({ 
+      hasRegistration: false,
+      hasCompletedTests: false
+    });
   } catch (error) {
     console.error('Error checking registration:', error);
     return res.status(500).json({ message: 'Failed to check registration' });

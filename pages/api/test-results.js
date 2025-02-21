@@ -20,7 +20,6 @@ export default async function handler(req, res) {
 
     const sheets = await getGoogleSheets();
 
-    // Batch fetch data
     const [submissionsResponse, testsResponse] = await Promise.all([
       sheets.spreadsheets.values.get({
         spreadsheetId: process.env.GOOGLE_SHEET_ID,
@@ -42,11 +41,9 @@ export default async function handler(req, res) {
       const type = test_id.split('_')[0];
       const test = tests.find(row => row[0] === test_id);
 
-      // Parse values safely
       const parsedScore = parseInt(score) || 0;
       const parsedTotalPoints = test ? parseInt(test[6]) || 0 : 0;
 
-      // Safely parse responses
       let parsedResponses = [];
       try {
         parsedResponses = JSON.parse(responses || '[]');
@@ -54,7 +51,6 @@ export default async function handler(req, res) {
         console.error('Failed to parse responses:', e);
       }
 
-      // Update results only if newer submission
       if (!results[type] || parseInt(submission_count) > parseInt(results[type].submission_count)) {
         results[type] = {
           score: parsedScore,

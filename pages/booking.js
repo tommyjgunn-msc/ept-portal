@@ -19,14 +19,13 @@ export default function Booking() {
   const router = useRouter();
   const [availableSpots, setAvailableSpots] = useState({});
   const [dateCapacity, setDateCapacity] = useState({});
-  const [regularDates, setRegularDates] = useState([]); // Add state for regular dates
-  const [refugeeDates, setRefugeeDates] = useState([]); // Add state for refugee dates
+  const [regularDates, setRegularDates] = useState([]); 
+  const [refugeeDates, setRefugeeDates] = useState([]); 
   const validateEmail = (email) => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return re.test(String(email).toLowerCase());
   };
 
-  // Fetch test dates from API
   useEffect(() => {
     async function fetchTestDates() {
       try {
@@ -43,7 +42,6 @@ export default function Booking() {
     fetchTestDates();
   }, []);
 
-  // Fetch booking counts (existing code)
   useEffect(() => {
     async function fetchData() {
       try {
@@ -60,10 +58,9 @@ export default function Booking() {
     fetchData();
   }, []);
 
-  // Calculate available spots dynamically
   const getAvailableSpots = (date, hasLaptop) => {
     const dateConfig = regularDates.find(d => d.date === date);
-    if (!dateConfig) return 0; // Fallback if date not found
+    if (!dateConfig) return 0;
 
     const booked = dateCapacity[date] || { withLaptop: 0, withoutLaptop: 0 };
     return hasLaptop
@@ -91,7 +88,6 @@ export default function Booking() {
   const handleSubmit = async (e) => {
     e.preventDefault();
   
-    // Validate email before proceeding
     if (!validateEmail(formData.email)) {
       setError('Please enter a valid email address.');
       return;
@@ -101,7 +97,6 @@ export default function Booking() {
       setStep(step + 1);
       return;
     }
-    // Get user data from session storage
     const userData = JSON.parse(sessionStorage.getItem('userData'));
     if (!userData) {
       setError('Session expired. Please login again.');
@@ -139,7 +134,6 @@ export default function Booking() {
         bookingDate: new Date().toISOString()
       }));
       
-      // Changed this line to redirect to home instead of registration-complete
       router.push('/home');
   
     } catch (error) {

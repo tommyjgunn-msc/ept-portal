@@ -1,3 +1,4 @@
+// pages/api/test-delivery.js
 import { getGoogleSheets } from '../../utils/googleSheets';
 
 /**
@@ -17,7 +18,6 @@ export default async function handler(req, res) {
   try {
     const { date, type, student_id } = req.query;
 
-    // Validate inputs
     if (!date || !type || !student_id) {
       return res.status(400).json({
         error: 'missing_params',
@@ -25,7 +25,6 @@ export default async function handler(req, res) {
       });
     }
 
-    // Validate student_id format
     if (!/^[a-zA-Z0-9]+$/.test(student_id)) {
       return res.status(400).json({
         error: 'invalid_student_id',
@@ -35,7 +34,6 @@ export default async function handler(req, res) {
 
     const sheets = await getGoogleSheets();
 
-    // Batch fetch data from Google Sheets
     const ranges = ['Submissions!A2:G', 'Tests!A2:G', 'WritingPrompts!A2:E', 'Questions!A2:I'];
     const batchResponse = await sheets.spreadsheets.values.batchGet({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
@@ -44,10 +42,9 @@ export default async function handler(req, res) {
 
     const [submissionsResponse, testResponse, promptsResponse, questionsResponse] = batchResponse.data.valueRanges;
 
-    // Check for existing submissions
     const submissions = submissionsResponse.values || [];
     const testSubmissions = submissions.filter(row => {
-      const submissionType = row[0].split('_')[0]; // Extract type from test_id
+      const submissionType = row[0].split('_')[0];
       return row[1] === student_id && submissionType === type;
     });
 
@@ -56,19 +53,17 @@ export default async function handler(req, res) {
         error: 'already_submitted',
         message: 'You have already taken this test',
         submission: {
-          date: testSubmissions[0][5], // submission_date
-          score: testSubmissions[0][2], // score
+          date: testSubmissions[0][5],
+          score: testSubmissions[0][2],
         }
       });
     }
 
-    // Find test for this date and type
     const test = testResponse.values?.find(row => row[5] === date && row[1] === type);
     if (!test) {
       return res.status(404).json({ message: 'Test not found' });
     }
 
-    // Get test content based on type
     const test_id = test[0];
     let content;
 

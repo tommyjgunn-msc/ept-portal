@@ -1,16 +1,16 @@
-import { useState, useEffect, useCallback } from 'react';
+// pages/test-portal.js
+import { useState, useEffect, useCallback, useReducer } from 'react';
 import { useRouter } from 'next/router';
 import { useTestMode } from '@/context/TestModeContext';
 import DebugSessionStorage from '../components/DebugSessionStorage';
 
 const TEST_SEQUENCE = ['reading', 'writing', 'listening'];
 const TEST_TIME = {
-  reading: 60 * 60 * 1000,    // 1 hour
-  writing: 60 * 60 * 1000,    // 1 hour
-  listening: 60 * 60 * 1000   // 1 hour
+  reading: 60 * 60 * 1000,  
+  writing: 60 * 60 * 1000,   
+  listening: 60 * 60 * 1000   
 };
 
-// Test type components
 const ReadingTest = ({ content, onAnswer, responses }) => {
   return (
     <div className="space-y-8">
@@ -139,6 +139,38 @@ const ListeningTest = ({ content, onAnswer, responses }) => {
   );
 };
 
+const useTestState = (initialState) => {
+  const [state, dispatch] = useReducer(testReducer, {
+    currentTest: 0,
+    testData: null,
+    timeRemaining: null,
+    showConfirmation: false,
+    responses: {},
+    error: '',
+    isSubmitting: false,
+    submissionError: '',
+    isAutoSubmitting: false,
+    timerWarning: false,
+    shouldSubmit: false,
+    ...initialState
+  });
+
+  const setTimeRemaining = (time) => {
+    dispatch({ type: 'SET_TIME', payload: time });
+    
+    sessionStorage.setItem(
+      `test_time_${TEST_SEQUENCE[state.currentTest]}`,
+      time.toString()
+    );
+  };
+
+  return {
+    state,
+    dispatch,
+    setTimeRemaining,
+  };
+};
+
 export default function TestPortal() {
   const { getCurrentTime, getTimerSpeed } = useTestMode();
   const [currentTest, setCurrentTest] = useState(0);
@@ -155,14 +187,13 @@ export default function TestPortal() {
   const [shouldSubmit, setShouldSubmit] = useState(false);
   
   const formatDateForAPI = (dateString) => {
-    // Use a regex to extract the day and month
     const match = dateString.match(/(\d{1,2})\s+(\w+)/);
     if (!match) {
         throw new Error('Invalid date format');
     }
 
-    const day = match[1]; // Extract the day
-    const month = match[2]; // Extract the month
+    const day = match[1]; 
+    const month = match[2];
 
     const monthMap = {
         'January': '01',
@@ -179,7 +210,6 @@ export default function TestPortal() {
         'December': '12'
     };
 
-    // Ensure the month exists in the map
     if (!monthMap[month]) {
         throw new Error(`Invalid month: ${month}`);
     }
@@ -189,7 +219,6 @@ export default function TestPortal() {
 
   
 
-  // Load test data
   useEffect(() => {
     const loadTest = async () => {
       try {
@@ -213,7 +242,6 @@ export default function TestPortal() {
         console.log('Parsed booking details:', bookingDetails);
         console.log('Parsed user data:', userData);
         
-        // Get current time in user's timezone
         const now = getCurrentTime();
         console.log('Current time:', now);
         console.log('Current hour:', now.getHours());
@@ -221,7 +249,6 @@ export default function TestPortal() {
         const is10AM = now.getHours() >= 10;
         console.log('Is after 10 AM:', is10AM);
     
-        // Attempt to fetch test data
         console.log('Fetching test with params:', {
           date: bookingDetails.selectedDate,
           type: TEST_SEQUENCE[currentTest],
@@ -311,39 +338,43 @@ export default function TestPortal() {
     resumeTest();
   }, [currentTest]);
 
-  // Timer effect
   useEffect(() => {
-    let mounted = true;
     if (!testData || timeRemaining === null) return;
     
-    const speed = getTimerSpeed() * 1000; // Convert to ms
-    const warningTime = 5 * 60 * 1000; // 5 minutes warning
-  
+    let mounted = true;
+    const speed = getTimerSpeed() * 1000;
+    const warningTime = 5 * 60 * 1000;
+    
+    let lastUpdate = Date.now();
+    
     const timer = setInterval(() => {
       if (!mounted) return;
+      
+      const now = Date.now();
+      const delta = now - lastUpdate;
+      lastUpdate = now;
+      
       setTimeRemaining(prev => {
-        if (prev <= 0) return 0;
+        const newTime = Math.max(0, prev - (delta * speed / 1000));
         
-        // Set warning at 5 minutes
-        if (prev <= warningTime && !timerWarning) {
+        if (newTime <= warningTime && !timerWarning) {
           setTimerWarning(true);
         }
         
-        // Auto-submit at 30 seconds if not already submitting
-        if (prev <= 30000 && !isAutoSubmitting) {
+        if (newTime <= 30000 && !isAutoSubmitting) {
           setIsAutoSubmitting(true);
           setShouldSubmit(true);
         }
         
-        return prev - speed;
+        return newTime;
       });
-    }, 1000);
-  
-    return () => { 
+    }, 100); 
+    
+    return () => {
       mounted = false;
       clearInterval(timer);
     };
-  }, [testData, timeRemaining, getTimerSpeed, timerWarning, isAutoSubmitting, setTimerWarning, setIsAutoSubmitting]);
+  }, [testData, timeRemaining, getTimerSpeed]);
 
   useEffect(() => {
     const handleBeforeUnload = (e) => {
@@ -369,7 +400,7 @@ export default function TestPortal() {
   
     return () => {
       clearInterval(saveTimer);
-      if (!showConfirmation) {  // Only clear if test isn't completed
+      if (!showConfirmation) {  
         sessionStorage.removeItem(`test_time_${TEST_SEQUENCE[currentTest]}`);
       }
     };
@@ -410,12 +441,10 @@ export default function TestPortal() {
     setShowConfirmation(false);
     
     if (currentTest < TEST_SEQUENCE.length - 1) {
-      // Simply move to next test
       console.log(`Moving to next test: ${TEST_SEQUENCE[currentTest + 1]}`);
       setCurrentTest(prev => prev + 1);
     } else {
       console.log('All tests completed, redirecting to completion page');
-      // Force a clean transition to test-complete
       window.location.href = '/test-complete';
     }
   };  
@@ -470,7 +499,6 @@ export default function TestPortal() {
       
       if (!response.ok) {
         if (data.error === 'already_submitted') {
-          // If already submitted, we can still move to next test
           console.log('Test was already submitted, moving to next test');
           moveToNextTest();
           return;
@@ -478,7 +506,6 @@ export default function TestPortal() {
         throw new Error(data.message || 'Failed to submit test');
       }
   
-      // Clear current test data
       sessionStorage.removeItem(`test_responses_${TEST_SEQUENCE[currentTest]}`);
       sessionStorage.removeItem(`test_time_${TEST_SEQUENCE[currentTest]}`);
       

@@ -1,3 +1,4 @@
+// pages/test-complete.js
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 
@@ -12,7 +13,6 @@ export default function TestComplete() {
     const fetchResults = async () => {
       console.log('Starting fetchResults...');
       try {
-        // Get and validate session data
         const storedUserData = sessionStorage.getItem('userData');
         const storedBookingDetails = sessionStorage.getItem('bookingDetails');
         
@@ -41,7 +41,6 @@ export default function TestComplete() {
 
         setBookingDetails(parsedBookingDetails);
         
-        // Fetch test results
         console.log('Fetching results for eptId:', userData.eptId);
         const response = await fetch(`/api/test-results?student_id=${userData.eptId}`);
         console.log('API response status:', response.status);
@@ -129,11 +128,9 @@ export default function TestComplete() {
 
     const testData = results[type];
     
-    // Check if test data actually has responses
     const hasResponses = testData.responses && 
                         Object.keys(testData.responses).length > 0;
     
-    // For writing test
     if (type === 'writing') {
       if (!hasResponses) {
         return { status: 'not_started', message: 'Not Started' };
@@ -143,7 +140,6 @@ export default function TestComplete() {
       }
     }
 
-    // For reading and listening tests
     if (type === 'reading' || type === 'listening') {
       if (!hasResponses) {
         return { status: 'not_started', message: 'Not Started' };
@@ -157,7 +153,6 @@ export default function TestComplete() {
       };
     }
 
-    // If we have data but no responses, it's incomplete
     return { status: 'incomplete', message: 'Incomplete' };
   };
 

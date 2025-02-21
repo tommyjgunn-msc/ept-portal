@@ -20,10 +20,8 @@ export default function Home() {
     return <div>Loading...</div>;
   }
 
-  // Parse the date string from format 'Friday, 7 February' to a Date object
   const parseTestDate = (dateStr) => {
     const currentYear = new Date().getFullYear();
-    // Add the current year to the date string
     const fullDateStr = `${dateStr}, ${currentYear}`;
     return new Date(fullDateStr);
   };
@@ -31,12 +29,10 @@ export default function Home() {
   const testDate = parseTestDate(bookingDetails.selectedDate);
   const today = new Date();
   
-  // Check if the dates match (day, month, and year)
   const isToday = testDate.getDate() === today.getDate() &&
                   testDate.getMonth() === today.getMonth() &&
                   testDate.getFullYear() === today.getFullYear();
                   
-  // Check if test date has passed by comparing with the start of the next day
   const nextDay = new Date(testDate);
   nextDay.setDate(nextDay.getDate() + 1);
   nextDay.setHours(0, 0, 0, 0);

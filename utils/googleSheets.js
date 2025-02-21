@@ -142,14 +142,14 @@ export async function createBooking(bookingData) {
     console.log('Creating booking:', bookingData);
     
     const formattedDate = bookingData.selectedDate
-      ? `'${bookingData.selectedDate}'`  // Add single quote to force text format
+      ? `'${bookingData.selectedDate}'`  
       : '';
 
     const sheets = await getGoogleSheets();
     const response = await sheets.spreadsheets.values.append({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
       range: 'Bookings!A2:F',
-      valueInputOption: 'RAW',  // Change from USER_ENTERED to RAW
+      valueInputOption: 'RAW', 
       insertDataOption: 'INSERT_ROWS',
       requestBody: {
         values: [[

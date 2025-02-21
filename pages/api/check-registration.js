@@ -10,7 +10,6 @@ export default async function handler(req, res) {
     const { eptId } = req.body;
     const sheets = await getGoogleSheets();
     
-    // Check Bookings sheet for existing registration
     const bookingsResponse = await sheets.spreadsheets.values.get({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
       range: 'Bookings!A2:F',
@@ -19,7 +18,6 @@ export default async function handler(req, res) {
     const bookings = bookingsResponse.data.values || [];
     const existingBooking = bookings.find(booking => booking[2] === eptId);
 
-    // Check Submissions sheet for completed tests
     const submissionsResponse = await sheets.spreadsheets.values.get({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
       range: 'Submissions!A2:G',

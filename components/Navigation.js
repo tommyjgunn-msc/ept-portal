@@ -2,18 +2,18 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import { useTestMode } from '@/context/TestModeContext';
 
 export default function Navigation() {
   const [userData, setUserData] = useState(null);
   const [bookingDetails, setBookingDetails] = useState(null);
   const [isTestTime, setIsTestTime] = useState(false);
   const router = useRouter();
+  const { getCurrentTime, isTestMode } = useTestMode();
 
-  // Only show test link on home page
   const isHomePage = router.pathname === '/home';
   const isLoginPage = router.pathname === '/login';
 
-  // Single useEffect to handle all session storage and user data
   useEffect(() => {
     const checkUserData = async () => {
       const storedUserData = sessionStorage.getItem('userData');
@@ -22,8 +22,6 @@ export default function Navigation() {
       if (storedUserData) {
         try {
           const parsedUserData = JSON.parse(storedUserData);
-          
-          // Only fetch user details if we have an EPTID
           if (parsedUserData.eptId) {
             const response = await fetch('/api/auth', {
               method: 'POST',
@@ -52,14 +50,20 @@ export default function Navigation() {
     };
 
     checkUserData();
-  }, [router.pathname]); // Re-run when route changes
+  }, [router.pathname]);
 
-  // Check if it's test day and after 10 AM
   useEffect(() => {
     if (bookingDetails?.selectedDate) {
-      const testDate = new Date(bookingDetails.selectedDate);
-      const now = new Date();
+      if (isTestMode) {
+        setIsTestTime(true);
+        return;
+      }
+      
+      const now = getCurrentTime();
       const is10AM = now.getHours() >= 10;
+      
+      const [, day, month] = bookingDetails.selectedDate.match(/(\d+)\s+(\w+)/);
+      const testDate = new Date(`${month} ${day}, 2025`);
       
       const isSameDay = testDate.getDate() === now.getDate() &&
                        testDate.getMonth() === now.getMonth() &&
@@ -67,9 +71,11 @@ export default function Navigation() {
 
       setIsTestTime(isSameDay && is10AM);
     }
-  }, [bookingDetails]);
+  }, [bookingDetails, isTestMode, getCurrentTime]);
 
-  // Don't show any navigation elements on login page
+  const shouldShowTestLink = isHomePage && bookingDetails;
+  const isTestActive = isTestTime || isTestMode;
+
   if (isLoginPage) {
     return (
       <nav className="bg-white shadow">
@@ -98,23 +104,21 @@ export default function Navigation() {
 
           {userData?.name && (
             <div className="flex items-center space-x-4">
-              {/* Welcome message - show on all pages except login when user is logged in */}
               <span className="text-gray-600">
                 Welcome, {userData.name}
               </span>
 
-              {/* Test link - only show on home page if registered */}
-              {isHomePage && bookingDetails && (
+              {shouldShowTestLink && (
                 <Link
                   href="/test-portal"
                   className={`ml-4 px-3 py-2 rounded-md text-sm font-medium ${
-                    isTestTime
+                    isTestActive
                       ? 'text-white bg-indigo-600 hover:bg-indigo-700'
                       : 'text-gray-400 bg-gray-100 cursor-not-allowed'
                   }`}
-                  onClick={e => !isTestTime && e.preventDefault()}
+                  onClick={e => !isTestActive && e.preventDefault()}
                 >
-                  {isTestTime ? 'Access Test' : `Test Available on ${bookingDetails.selectedDate}`}
+                  {isTestActive ? 'Access Test' : `Test Available on ${bookingDetails.selectedDate}`}
                 </Link>
               )}
             </div>

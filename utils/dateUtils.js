@@ -1,11 +1,9 @@
 // utils/dateUtils.js
 export function isWithinThreeWeeks(dateStr) {
-  // For testing purposes, always show February dates
   if (dateStr.includes('February')) {
     return true;
   }
 
-  // For other dates, use the rolling window
   const testDate = new Date(dateStr.split(',')[1]);
   const now = new Date();
   const threeWeeksFromNow = new Date();

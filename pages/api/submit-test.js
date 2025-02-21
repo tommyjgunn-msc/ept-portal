@@ -1,99 +1,96 @@
 // pages/api/submit-test.js
 import { getGoogleSheets } from '../../utils/googleSheets';
+import { calculateTestScore } from '../../utils/testScoring';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({
-      error: 'method_not_allowed',
-      message: 'Only POST requests are allowed'
-    });
+    return res.status(405).json({ error: 'method_not_allowed' });
   }
 
   try {
-    const { test_id, responses, student_id } = req.body;
-    
-    // Validate required fields
-    if (!test_id || !responses || !student_id) {
-      return res.status(400).json({
-        error: 'missing_fields',
-        message: 'All fields are required'
+    const { test_id, responses, student_id, type } = req.body;
+
+    console.log('Processing test submission:', {
+      test_id,
+      type,
+      student_id,
+      responseCount: Object.keys(responses).length
+    });
+
+    if (!test_id || !responses || !student_id || !type) {
+      return res.status(400).json({ 
+        error: 'missing_data',
+        message: 'Missing required submission data'
       });
     }
 
-    // Extract type from test_id
-    const type = test_id.split('_')[0];
-    
     const sheets = await getGoogleSheets();
-
-    // Check for existing submissions
-    const submissionsResponse = await sheets.spreadsheets.values.get({
+    
+    const existingSubmissionResponse = await sheets.spreadsheets.values.get({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
       range: 'Submissions!A2:G'
     });
 
-    const submissions = submissionsResponse.data.values || [];
-    const existingSubmissions = submissions.filter(row => 
+    const existingSubmissions = existingSubmissionResponse.data.values || [];
+    const hasSubmitted = existingSubmissions.some(row => 
       row[0] === test_id && row[1] === student_id
     );
 
-    if (existingSubmissions.length > 0) {
-      return res.status(403).json({
+    if (hasSubmitted) {
+      return res.status(409).json({
         error: 'already_submitted',
-        message: 'You have already submitted this test',
-        submission: {
-          date: existingSubmissions[0][5],
-          score: existingSubmissions[0][2]
-        }
+        message: 'Test has already been submitted'
       });
     }
 
-    // Calculate score based on test type
-    let score = null; // Default to null for writing tests
+    let scoreData = { score: null, totalPoints: null, percentage: null };
     
     if (type !== 'writing') {
-      const testResponse = await sheets.spreadsheets.values.get({
+      const questionsResponse = await sheets.spreadsheets.values.get({
         spreadsheetId: process.env.GOOGLE_SHEET_ID,
         range: 'Questions!A2:I'
       });
-    
-      const testContent = testResponse.data.values.filter(row => row[0] === test_id);
-      
-      score = testContent.reduce((total, question) => {
-        const questionId = `${question[1]}-${question[4]}`; // section-question format
-        const response = responses[questionId];
-        const correctAnswer = question[7]; // This is column H, which has correct answer
-        const points = parseInt(question[8]) || 0; // This is column I, which has points
-        
-        // Normalize both strings for comparison
-        const normalizedResponse = String(response).trim();
-        const normalizedCorrectAnswer = String(correctAnswer).trim();
-        
-        return total + (normalizedResponse === normalizedCorrectAnswer ? points : 0);
-      }, 0);
+
+      const testQuestions = (questionsResponse.data.values || [])
+        .filter(row => row[0] === test_id);
+
+      console.log(`Found ${testQuestions.length} questions for test ${test_id}`);
+
+      if (testQuestions.length > 0) {
+        scoreData = calculateTestScore(testQuestions, responses);
+        console.log('Calculated score:', scoreData);
+      } else {
+        console.warn('No questions found for test:', test_id);
+      }
     }
 
-    // Record submission
+    const submissionRow = [
+      test_id,
+      student_id,
+      scoreData.score,
+      'true',
+      JSON.stringify(responses),
+      new Date().toISOString(),
+      type,
+      scoreData.totalPoints,
+      scoreData.percentage
+    ];
+
+    console.log('Saving submission row:', submissionRow);
+
     await sheets.spreadsheets.values.append({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
-      range: 'Submissions!A2:G',
+      range: 'Submissions!A2:I',
       valueInputOption: 'RAW',
       insertDataOption: 'INSERT_ROWS',
       requestBody: {
-        values: [[
-          test_id,
-          student_id,
-          score,
-          'true', // completed
-          JSON.stringify(responses),
-          new Date().toISOString(), // submission_date
-          type
-        ]]
+        values: [submissionRow]
       }
     });
 
     return res.status(200).json({
       message: 'Test submitted successfully',
-      score,
+      ...scoreData,
       type
     });
 
@@ -101,8 +98,7 @@ export default async function handler(req, res) {
     console.error('Error submitting test:', error);
     return res.status(500).json({
       error: 'submission_failed',
-      message: 'Failed to submit test',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: error.message || 'Failed to submit test'
     });
   }
 }

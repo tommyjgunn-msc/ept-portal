@@ -1,6 +1,5 @@
 // pages/api/booking.js
-import { createBooking } from '../../utils/googleSheets';  // Add this import at the top
-
+import { createBooking } from '../../utils/googleSheets'; 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
@@ -10,7 +9,6 @@ export default async function handler(req, res) {
     console.log('Booking API called with:', req.body);
     const bookingData = req.body;
 
-    // Debug log
     console.log('Checking fields:', {
       name: !!bookingData.name,
       email: !!bookingData.email,
@@ -21,7 +19,6 @@ export default async function handler(req, res) {
       confirmedAttendance: bookingData.confirmedAttendance
     });
 
-    // Validate required fields
     const requiredFields = ['name', 'email', 'eptId', 'selectedDate', 'isRefugee'];
     const missingFields = requiredFields.filter(field => {
       const value = bookingData[field];
@@ -39,7 +36,6 @@ export default async function handler(req, res) {
       });
     }
 
-    // Create the booking
     console.log('All validation passed, creating booking...');
     const result = await createBooking(bookingData);
     console.log('Booking created:', result);

@@ -2,13 +2,16 @@
 import '../styles/globals.css';
 import Layout from '../components/Layout';
 import { TestModeProvider } from '../context/TestModeContext';
+import { ProctoringProvider } from '../context/ProctoringContext';
 
 function MyApp({ Component, pageProps }) {
   return (
     <TestModeProvider>
-      <Layout>
-        <Component {...pageProps} />
-      </Layout>
+      <ProctoringProvider>
+        <Layout>
+          <Component {...pageProps} />
+        </Layout>
+      </ProctoringProvider>
     </TestModeProvider>
   );
 }

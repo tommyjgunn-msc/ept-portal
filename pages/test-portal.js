@@ -2,6 +2,8 @@
 import { useState, useEffect, useCallback, useReducer } from 'react';
 import { useRouter } from 'next/router';
 import { useTestMode } from '@/context/TestModeContext';
+import { useProctoring } from '@/context/ProctoringContext';
+import ProctoringWrapper from '../components/ProctoringWrapper';
 import DebugSessionStorage from '../components/DebugSessionStorage';
 
 const TEST_SEQUENCE = ['reading', 'writing', 'listening'];
@@ -173,6 +175,7 @@ const useTestState = (initialState) => {
 
 export default function TestPortal() {
   const { getCurrentTime, getTimerSpeed } = useTestMode();
+  const { getProctoringData, clearWarnings, toggleProctoring, stopProctoringCheck } = useProctoring(); // Enhanced proctoring hooks
   const [currentTest, setCurrentTest] = useState(0);
   const [testData, setTestData] = useState(null);
   const [timeRemaining, setTimeRemaining] = useState(null);
@@ -185,6 +188,12 @@ export default function TestPortal() {
   const [isAutoSubmitting, setIsAutoSubmitting] = useState(false);
   const [timerWarning, setTimerWarning] = useState(false);
   const [shouldSubmit, setShouldSubmit] = useState(false);
+  
+  // Handler for when proctoring forces a submission
+  const handleForcedSubmit = useCallback(() => {
+    console.log("Forced submission triggered by proctoring system");
+    setShouldSubmit(true);
+  }, []);
   
   const formatDateForAPI = (dateString) => {
     const match = dateString.match(/(\d{1,2})\s+(\w+)/);
@@ -215,9 +224,7 @@ export default function TestPortal() {
     }
 
     return `2025-${monthMap[month]}-${day.padStart(2, '0')}`;
-};
-
-  
+  };
 
   useEffect(() => {
     const loadTest = async () => {
@@ -374,7 +381,7 @@ export default function TestPortal() {
       mounted = false;
       clearInterval(timer);
     };
-  }, [testData, timeRemaining, getTimerSpeed]);
+  }, [testData, timeRemaining, getTimerSpeed, timerWarning, isAutoSubmitting]);
 
   useEffect(() => {
     const handleBeforeUnload = (e) => {
@@ -404,7 +411,7 @@ export default function TestPortal() {
         sessionStorage.removeItem(`test_time_${TEST_SEQUENCE[currentTest]}`);
       }
     };
-  }, [timeRemaining, currentTest]);
+  }, [timeRemaining, currentTest, showConfirmation]);
   
   const formatTime = (ms) => {
     if (ms === null) return '--:--';
@@ -438,16 +445,22 @@ export default function TestPortal() {
       currentType: TEST_SEQUENCE[currentTest]
     });
   
+    clearWarnings();
     setShowConfirmation(false);
     
     if (currentTest < TEST_SEQUENCE.length - 1) {
       console.log(`Moving to next test: ${TEST_SEQUENCE[currentTest + 1]}`);
-      setCurrentTest(prev => prev + 1);
+      
+      setTimeout(() => {
+        setCurrentTest(prev => prev + 1);
+      }, 100);
     } else {
       console.log('All tests completed, redirecting to completion page');
+      stopProctoringCheck();
+      toggleProctoring(false); 
       window.location.href = '/test-complete';
     }
-  };  
+  };
   
   const submitTest = useCallback(async () => {
     if (isSubmitting) {
@@ -476,6 +489,9 @@ export default function TestPortal() {
       if (!userData?.eptId || !storedBooking) {
         throw new Error('Session data missing');
       }
+      
+      const proctoringData = getProctoringData();
+      console.log('Proctoring data for submission:', proctoringData);
   
       const submissionData = {
         test_id: testData.test_id,
@@ -483,7 +499,8 @@ export default function TestPortal() {
         type: TEST_SEQUENCE[currentTest],
         responses,
         time_taken: TEST_TIME[TEST_SEQUENCE[currentTest]] - timeRemaining,
-        completed: true
+        completed: true,
+        proctoring_data: proctoringData
       };
   
       console.log('Submitting test data:', submissionData);
@@ -510,6 +527,8 @@ export default function TestPortal() {
       sessionStorage.removeItem(`test_time_${TEST_SEQUENCE[currentTest]}`);
       
       console.log('Test submitted successfully, showing confirmation');
+      // Clear proctoring warnings to prevent lingering warnings in confirmation screen
+      clearWarnings();
       setShowConfirmation(true);
   
     } catch (error) {
@@ -518,7 +537,17 @@ export default function TestPortal() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [isSubmitting, testData, TEST_SEQUENCE, currentTest, timeRemaining, responses]);
+  }, [isSubmitting, testData, TEST_SEQUENCE, currentTest, timeRemaining, responses, getProctoringData, clearWarnings]);
+
+  // Cleanup effect for when component unmounts
+  useEffect(() => {
+    return () => {
+      // Ensure proctoring is fully stopped when navigating away
+      toggleProctoring(false);
+      stopProctoringCheck();
+      clearWarnings();
+    };
+  }, [toggleProctoring, stopProctoringCheck, clearWarnings]);
 
   if (error) {
     return (
@@ -557,120 +586,122 @@ export default function TestPortal() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <DebugSessionStorage />
-      {/* Confirmation Dialog */}
-      {showConfirmation && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="max-w-md w-full bg-white shadow rounded-lg p-6 text-center m-4">
-            <h2 className="text-2xl font-bold mb-4">Test Submitted</h2>
-            <p className="text-gray-600 mb-6">
-              You've completed the {TEST_SEQUENCE[currentTest]} test. 
-              {submissionError ? (
-                <span className="text-red-600 block mt-2">
-                  Warning: {submissionError}
-                </span>
-              ) : 'Please wait for the instructor before proceeding to the next test.'}
-            </p>
-            <div className="flex space-x-4 justify-center">
-              {!submissionError && (
-                <button
-                  onClick={moveToNextTest}
-                  className="bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700"
-                  disabled={isSubmitting}
-                >
-                  {currentTest < TEST_SEQUENCE.length - 1 ? 'Start Next Test' : 'Complete Testing'}
-                </button>
-              )}
-              {submissionError && (
-                <button
-                  onClick={() => {
-                    setShowConfirmation(false);
-                    setSubmissionError('');
-                  }}
-                  className="bg-red-600 text-white px-6 py-2 rounded-md hover:bg-red-700"
-                >
-                  Return to Test
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Main Test Interface */}
-      <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 capitalize">
-                {TEST_SEQUENCE[currentTest]} Test
-              </h1>
-              <p className="text-sm text-gray-500 mt-1">
-                {currentTest + 1} of {TEST_SEQUENCE.length}
+    <ProctoringWrapper onForcedSubmit={handleForcedSubmit}>
+      <div className="min-h-screen bg-gray-50">
+        <DebugSessionStorage />
+        {/* Confirmation Dialog */}
+        {showConfirmation && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="max-w-md w-full bg-white shadow rounded-lg p-6 text-center m-4">
+              <h2 className="text-2xl font-bold mb-4">Test Submitted</h2>
+              <p className="text-gray-600 mb-6">
+                You've completed the {TEST_SEQUENCE[currentTest]} test. 
+                {submissionError ? (
+                  <span className="text-red-600 block mt-2">
+                    Warning: {submissionError}
+                  </span>
+                ) : 'Please wait for the instructor before proceeding to the next test.'}
               </p>
-            </div>
-            <div className={`text-lg font-medium ${
-              timerWarning ? 'text-red-600' : 'text-gray-900'
-            }`}>
-              Time Remaining: {formatTime(timeRemaining)}
+              <div className="flex space-x-4 justify-center">
+                {!submissionError && (
+                  <button
+                    onClick={moveToNextTest}
+                    className="bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700"
+                    disabled={isSubmitting}
+                  >
+                    {currentTest < TEST_SEQUENCE.length - 1 ? 'Start Next Test' : 'Complete Testing'}
+                  </button>
+                )}
+                {submissionError && (
+                  <button
+                    onClick={() => {
+                      setShowConfirmation(false);
+                      setSubmissionError('');
+                    }}
+                    className="bg-red-600 text-white px-6 py-2 rounded-md hover:bg-red-700"
+                  >
+                    Return to Test
+                  </button>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      </div>
+        )}
 
-      {/* Timer Warning */}
-      {timerWarning && timeRemaining > 0 && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
-          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
-            <div className="flex">
-              <div className="ml-3">
-                <p className="text-sm text-yellow-700">
-                  Warning: Less than 5 minutes remaining!
+        {/* Main Test Interface */}
+        <div className="bg-white shadow">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div className="flex justify-between items-center">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 capitalize">
+                  {TEST_SEQUENCE[currentTest]} Test
+                </h1>
+                <p className="text-sm text-gray-500 mt-1">
+                  {currentTest + 1} of {TEST_SEQUENCE.length}
                 </p>
+              </div>
+              <div className={`text-lg font-medium ${
+                timerWarning ? 'text-red-600' : 'text-gray-900'
+              }`}>
+                Time Remaining: {formatTime(timeRemaining)}
               </div>
             </div>
           </div>
         </div>
-      )}
 
-      {/* Test Content */}
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          {TEST_SEQUENCE[currentTest] === 'reading' && (
-            <ReadingTest 
-              content={testData.content}
-              onAnswer={handleAnswer}
-              responses={responses}
-            />
-          )}
-          {TEST_SEQUENCE[currentTest] === 'writing' && (
-            <WritingTest 
-              content={testData.content}
-              onAnswer={handleAnswer}
-              responses={responses}
-            />
-          )}
-          {TEST_SEQUENCE[currentTest] === 'listening' && (
-            <ListeningTest 
-              content={testData.content}
-              onAnswer={handleAnswer}
-              responses={responses}
-            />
-          )}
-          
-          <div className="mt-8 flex justify-end">
-            <button
-              onClick={submitTest}
-              disabled={isSubmitting}
-              className={`bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700 
-                ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
-              {isSubmitting ? 'Submitting...' : 'Submit Test'}
-            </button>
+        {/* Timer Warning */}
+        {timerWarning && timeRemaining > 0 && (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+            <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+              <div className="flex">
+                <div className="ml-3">
+                  <p className="text-sm text-yellow-700">
+                    Warning: Less than 5 minutes remaining!
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
-      </main>
-    </div>
+        )}
+
+        {/* Test Content */}
+        <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+          <div className="px-4 py-6 sm:px-0">
+            {TEST_SEQUENCE[currentTest] === 'reading' && (
+              <ReadingTest 
+                content={testData.content}
+                onAnswer={handleAnswer}
+                responses={responses}
+              />
+            )}
+            {TEST_SEQUENCE[currentTest] === 'writing' && (
+              <WritingTest 
+                content={testData.content}
+                onAnswer={handleAnswer}
+                responses={responses}
+              />
+            )}
+            {TEST_SEQUENCE[currentTest] === 'listening' && (
+              <ListeningTest 
+                content={testData.content}
+                onAnswer={handleAnswer}
+                responses={responses}
+              />
+            )}
+            
+            <div className="mt-8 flex justify-end">
+              <button
+                onClick={submitTest}
+                disabled={isSubmitting}
+                className={`bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700 
+                  ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                {isSubmitting ? 'Submitting...' : 'Submit Test'}
+              </button>
+            </div>
+          </div>
+        </main>
+      </div>
+    </ProctoringWrapper>
   );
 }

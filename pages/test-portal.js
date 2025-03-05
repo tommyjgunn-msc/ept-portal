@@ -198,32 +198,33 @@ export default function TestPortal() {
   const formatDateForAPI = (dateString) => {
     const match = dateString.match(/(\d{1,2})\s+(\w+)/);
     if (!match) {
-        throw new Error('Invalid date format');
+      throw new Error('Invalid date format');
     }
-
+  
     const day = match[1]; 
     const month = match[2];
-
+    const currentYear = new Date().getFullYear();
+  
     const monthMap = {
-        'January': '01',
-        'February': '02',
-        'March': '03',
-        'April': '04',
-        'May': '05',
-        'June': '06',
-        'July': '07',
-        'August': '08',
-        'September': '09',
-        'October': '10',
-        'November': '11',
-        'December': '12'
+      'January': '01',
+      'February': '02',
+      'March': '03',
+      'April': '04',
+      'May': '05',
+      'June': '06',
+      'July': '07',
+      'August': '08',
+      'September': '09',
+      'October': '10',
+      'November': '11',
+      'December': '12'
     };
-
+  
     if (!monthMap[month]) {
-        throw new Error(`Invalid month: ${month}`);
+      throw new Error(`Invalid month: ${month}`);
     }
-
-    return `2025-${monthMap[month]}-${day.padStart(2, '0')}`;
+  
+    return `${currentYear}-${monthMap[month]}-${day.padStart(2, '0')}`;
   };
 
   useEffect(() => {

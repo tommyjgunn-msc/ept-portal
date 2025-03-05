@@ -25,6 +25,12 @@ export default function Booking() {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return re.test(String(email).toLowerCase());
   };
+  const parseTestDate = (dateStr) => {
+    const currentYear = new Date().getFullYear();
+    const [dayOfWeek, restOfDate] = dateStr.split(', ');
+    const [day, month] = restOfDate.split(' ');
+    return `${month} ${day}, ${currentYear}`;
+  };
 
   useEffect(() => {
     async function fetchTestDates() {
@@ -289,23 +295,32 @@ export default function Booking() {
               >
                 <option value="">Select a date</option>
                 {formData.isRefugee
-                  ? refugeeDates.map((date) => (
-                      <option key={date.date} value={date.date}>
-                        {date.date} - {date.location}
-                      </option>
-                    ))
+                  ? refugeeDates
+                      .filter(date => isFutureDate(date.date)) // Add this filter
+                      .map((date) => (
+                        <option key={date.date} value={date.date}>
+                          {date.date} - {date.location}
+                        </option>
+                      ))
                   : regularDates
-                      .filter(date => isWithinThreeWeeks(date.date))
+                      .filter(date => isFutureDate(date.date) && isWithinThreeWeeks(date.date)) // Filter future dates first
+                      .sort((a, b) => {
+                        const dateA = new Date(parseTestDate(a.date));
+                        const dateB = new Date(parseTestDate(b.date));
+                        return dateA - dateB;
+                      })
+                      .slice(0, 3)
                       .map(date => {
                         const availableSpots = getAvailableSpots(date.date, formData.hasLaptop);
                         if (availableSpots <= 0) return null;
-        
+
                         return (
                           <option key={date.date} value={date.date}>
                             {date.date} - {availableSpots} spots available
                           </option>
                         );
                       })
+                      .filter(Boolean) 
                   }
               </select>
             </div>

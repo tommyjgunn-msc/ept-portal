@@ -1,30 +1,29 @@
-// utils/dateUtils.js
 export function isWithinThreeWeeks(dateStr) {
-  if (dateStr.includes('February')) {
-    return true;
-  }
-
-  const testDate = new Date(dateStr.split(',')[1]);
+  const currentYear = new Date().getFullYear();
+  
+  const [dayOfWeek, restOfDate] = dateStr.split(', ');
+  const [day, month] = restOfDate.split(' ');
+  
+  const testDate = new Date(`${month} ${day}, ${currentYear}`);
   const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  
   const threeWeeksFromNow = new Date();
   threeWeeksFromNow.setDate(now.getDate() + 21);
+  threeWeeksFromNow.setHours(23, 59, 59, 999);
   
-  return testDate <= threeWeeksFromNow;
+  return testDate >= now && testDate <= threeWeeksFromNow;
 }
 
-export function isTestDay(dateStr) {
-  const testDate = new Date(dateStr);
-  const today = new Date();
+export function isFutureDate(dateStr) {
+  const currentYear = new Date().getFullYear();
   
-  return testDate.getDate() === today.getDate() &&
-         testDate.getMonth() === today.getMonth() &&
-         testDate.getFullYear() === today.getFullYear();
-}
-
-export function formatDate(date) {
-  return date.toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric'
-  });
+  const [dayOfWeek, restOfDate] = dateStr.split(', ');
+  const [day, month] = restOfDate.split(' ');
+  
+  const testDate = new Date(`${month} ${day}, ${currentYear}`);
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  
+  return testDate >= now;
 }

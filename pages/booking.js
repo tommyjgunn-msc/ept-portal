@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { isWithinThreeWeeks } from '../utils/dateUtils';
+import { isFutureDate } from '../utils/dateUtils';
 
 export default function Booking() {
   const [step, setStep] = useState(1);

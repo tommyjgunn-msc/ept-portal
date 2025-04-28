@@ -22,7 +22,10 @@ export default function Home() {
 
   const parseTestDate = (dateStr) => {
     const currentYear = new Date().getFullYear();
-    const fullDateStr = `${dateStr}, ${currentYear}`;
+    // Check if dateStr already contains a comma (has day of week prefix)
+    const fullDateStr = dateStr.includes(',') 
+      ? `${dateStr} ${currentYear}` 
+      : `${dateStr}, ${currentYear}`;
     return new Date(fullDateStr);
   };
 

@@ -1,10 +1,9 @@
 export function isWithinThreeWeeks(dateStr) {
   const currentYear = new Date().getFullYear();
-  
   const [dayOfWeek, restOfDate] = dateStr.split(', ');
   const [day, month] = restOfDate.split(' ');
-  
   const testDate = new Date(`${month} ${day}, ${currentYear}`);
+  
   const now = new Date();
   now.setHours(0, 0, 0, 0);
   

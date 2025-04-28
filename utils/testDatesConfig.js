@@ -10,8 +10,9 @@ export const regularDates = [
     { date: 'Friday, 28 March', venues: 4, capacity: { withLaptop: 75, withoutLaptop: 25 } },
     { date: 'Friday, 23 April', venues: 4, capacity: { withLaptop: 75, withoutLaptop: 25 } },
     { date: 'Friday, 2 May', venues: 4, capacity: { withLaptop: 75, withoutLaptop: 25 } },
-    { date: 'Friday, 5 May', venues: 4, capacity: { withLaptop: 75, withoutLaptop: 25 } },
+    { date: 'Monday, 5 May', venues: 4, capacity: { withLaptop: 75, withoutLaptop: 25 } },
     { date: 'Friday, 9 May', venues: 4, capacity: { withLaptop: 75, withoutLaptop: 25 } },
+    { date: 'Saturday, 10 May', venues: 4, capacity: { withLaptop: 75, withoutLaptop: 25 } },
   ];
   
   export const refugeeDates = [

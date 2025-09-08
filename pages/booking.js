@@ -1,8 +1,10 @@
-// pages/booking.js
+// pages/booking.js - REPLACE EXISTING FILE
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { isWithinThreeWeeks } from '../utils/dateUtils';
 import { isFutureDate } from '../utils/dateUtils';
+import { Card, Button, FormField, Input, LoadingButton, Alert, ProgressBar, Badge } from '../components/UIDesignSystem';
+import { useToast } from '../components/ToastContext';
 
 export default function Booking() {
   const [step, setStep] = useState(1);
@@ -21,11 +23,14 @@ export default function Booking() {
   const [availableSpots, setAvailableSpots] = useState({});
   const [dateCapacity, setDateCapacity] = useState({});
   const [regularDates, setRegularDates] = useState([]); 
-  const [refugeeDates, setRefugeeDates] = useState([]); 
+  const [refugeeDates, setRefugeeDates] = useState([]);
+  const { addToast } = useToast();
+
   const validateEmail = (email) => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return re.test(String(email).toLowerCase());
   };
+
   const parseTestDate = (dateStr) => {
     const currentYear = new Date().getFullYear();
     const [dayOfWeek, restOfDate] = dateStr.split(', ');
@@ -44,10 +49,15 @@ export default function Booking() {
         }
       } catch (error) {
         console.error('Error fetching test dates:', error);
+        addToast({
+          type: 'error',
+          title: 'Loading Error',
+          message: 'Failed to load test dates. Please refresh the page.'
+        });
       }
     }
     fetchTestDates();
-  }, []);
+  }, [addToast]);
 
   useEffect(() => {
     async function fetchData() {
@@ -75,35 +85,29 @@ export default function Booking() {
       : dateConfig.capacity.withoutLaptop - booked.withoutLaptop;
   };
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const response = await fetch('/api/bookings/count');
-        if (response.ok) {
-          const data = await response.json();
-          setDateCapacity(data);
-          setAvailableSpots(data);
-        }
-      } catch (error) {
-        console.error('Error fetching bookings:', error);
-      }
-    }
-    
-    fetchData();
-  }, []);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
   
     if (!validateEmail(formData.email)) {
       setError('Please enter a valid email address.');
+      addToast({
+        type: 'error',
+        title: 'Invalid Email',
+        message: 'Please enter a valid email address.'
+      });
       return;
     }
   
     if (step < 5) {
       setStep(step + 1);
+      addToast({
+        type: 'success',
+        title: 'Step Completed',
+        message: `Moving to step ${step + 1} of 5`
+      });
       return;
     }
+
     const userData = JSON.parse(sessionStorage.getItem('userData'));
     if (!userData) {
       setError('Session expired. Please login again.');
@@ -140,12 +144,24 @@ export default function Booking() {
         eptId: userData.eptId,
         bookingDate: new Date().toISOString()
       }));
+
+      addToast({
+        type: 'success',
+        title: 'Registration Complete!',
+        message: `Your test is scheduled for ${formData.selectedDate}`
+      });
       
       router.push('/home');
   
     } catch (error) {
       console.error('Booking error:', error);
       setError(error.message || 'Failed to create booking');
+      
+      addToast({
+        type: 'error',
+        title: 'Registration Failed',
+        message: error.message || 'Please try again or contact support.'
+      });
     } finally {
       setIsLoading(false);
     }
@@ -164,242 +180,346 @@ export default function Booking() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const stepTitles = [
+    'Personal Information',
+    'Status Information', 
+    'Equipment Preference',
+    'Select Test Date',
+    'Confirm Registration'
+  ];
+
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md mx-auto bg-white p-8 rounded-lg shadow">
-        <h2 className="text-2xl font-bold mb-6">EPT Registration</h2>
-        
-        {/* Progress indicator */}
-        <div className="mb-8">
-          <div className="flex justify-between text-sm">
-            {[1, 2, 3, 4, 5].map((num) => (
-              <div
-                key={num}
-                className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                  step >= num ? 'bg-indigo-600 text-white' : 'bg-gray-200'
-                }`}
-              >
-                {num}
-              </div>
-            ))}
-          </div>
+      <div className="max-w-2xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
+            EPT Registration
+          </h1>
+          <p className="text-gray-600">
+            Complete your registration for the English Proficiency Test
+          </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Step 1: Personal Information */}
-          {step === 1 && (
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                  Full Name
-                </label>
-                <input
-                  type="text"
-                  id="name"
-                  required
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                  value={formData.name}
-                  onChange={(e) => updateFormData('name', e.target.value)}
-                />
-              </div>
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                  Email Address
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  required
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                  value={formData.email}
-                  onChange={(e) => updateFormData('email', e.target.value)}
-                />
-              </div>
+        <Card className="p-8" elevation="lg">
+          {/* Progress indicator */}
+          <div className="mb-8">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold text-gray-900">
+                Step {step}: {stepTitles[step - 1]}
+              </h2>
+              <Badge variant="primary">{step} of 5</Badge>
             </div>
-          )}
+            
+            <ProgressBar
+              value={step}
+              max={5}
+              variant="primary"
+              showLabel
+              className="mb-4"
+            />
 
-          {/* Step 2: Humanitarian Status */}
-          {step === 2 && (
-            <div>
-              <h3 className="text-lg font-medium mb-4">Are you a refugee?</h3>
-              <div role="radiogroup" aria-labelledby="refugee-question">
-                <div className="space-y-2">
-                  <label className="flex items-center p-3 border border-gray-300 rounded-lg hover:border-indigo-500">
-                    <input
-                      type="radio"
-                      name="isRefugee"
-                      value="true"
-                      checked={formData.isRefugee === true}
-                      onChange={() => updateFormData('isRefugee', true)}
-                      className="form-radio h-4 w-4 text-indigo-600"
-                    />
-                    <span className="ml-2">Yes, I am a refugee</span>
-                  </label>
-                  <label className="flex items-center p-3 border border-gray-300 rounded-lg hover:border-indigo-500">
-                    <input
-                      type="radio"
-                      name="isRefugee"
-                      value="false"
-                      checked={formData.isRefugee === false}
-                      onChange={() => updateFormData('isRefugee', false)}
-                      className="form-radio h-4 w-4 text-indigo-600"
-                    />
-                    <span className="ml-2">No, I am not a refugee</span>
-                  </label>
+            <div className="flex justify-between text-xs text-gray-500">
+              {stepTitles.map((title, index) => (
+                <div
+                  key={index}
+                  className={`flex-1 text-center ${
+                    step > index + 1 ? 'text-green-600' : step === index + 1 ? 'text-indigo-600 font-medium' : ''
+                  }`}
+                >
+                  {title}
                 </div>
-              </div>
+              ))}
             </div>
-          )}
-
-          {/* Step 3: Laptop Availability (only for non-refugees) */}
-          {step === 3 && !formData.isRefugee && (
-            <div>
-              <h3 className="text-lg font-medium mb-4">Do you have access to a laptop?</h3>
-              <div role="radiogroup" aria-labelledby="laptop-question">
-                <div className="space-y-2">
-                  <label className="flex items-center p-3 border border-gray-300 rounded-lg hover:border-indigo-500">
-                    <input
-                      type="radio"
-                      name="hasLaptop"
-                      value="true"
-                      checked={formData.hasLaptop === true}
-                      onChange={() => updateFormData('hasLaptop', true)}
-                      className="form-radio h-4 w-4 text-indigo-600"
-                    />
-                    <span className="ml-2">Yes, I have a laptop</span>
-                  </label>
-                  <label className="flex items-center p-3 border border-gray-300 rounded-lg hover:border-indigo-500">
-                    <input
-                      type="radio"
-                      name="hasLaptop"
-                      value="false"
-                      checked={formData.hasLaptop === false}
-                      onChange={() => updateFormData('hasLaptop', false)}
-                      className="form-radio h-4 w-4 text-indigo-600"
-                    />
-                    <span className="ml-2">No, I need a computer lab</span>
-                  </label>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Step 4: Date Selection */}
-          {step === 4 && (
-            <div>
-              <h3 className="text-lg font-medium mb-4">Select Your Test Date</h3>
-              <select
-                value={formData.selectedDate}
-                onChange={(e) => updateFormData('selectedDate', e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-md"
-                required
-              >
-                <option value="">Select a date</option>
-                {formData.isRefugee
-                  ? refugeeDates
-                      .filter(date => isFutureDate(date.date)) // Add this filter
-                      .map((date) => (
-                        <option key={date.date} value={date.date}>
-                          {date.date} - {date.location}
-                        </option>
-                      ))
-                  : regularDates
-                      .filter(date => isFutureDate(date.date) && isWithinThreeWeeks(date.date)) // Filter future dates first
-                      .sort((a, b) => {
-                        const dateA = new Date(parseTestDate(a.date));
-                        const dateB = new Date(parseTestDate(b.date));
-                        return dateA - dateB;
-                      })
-                      .slice(0, 3)
-                      .map(date => {
-                        const availableSpots = getAvailableSpots(date.date, formData.hasLaptop);
-                        if (availableSpots <= 0) return null;
-
-                        return (
-                          <option key={date.date} value={date.date}>
-                            {date.date} - {availableSpots} spots available
-                          </option>
-                        );
-                      })
-                      .filter(Boolean) 
-                  }
-              </select>
-            </div>
-          )}
-
-          {/* Step 5: Confirmation */}
-          {step === 5 && (
-            <div className="space-y-4">
-              <div className="p-4 bg-gray-50 rounded-md">
-                <h3 className="font-medium mb-2">Please review your information:</h3>
-                <p>Name: {formData.name}</p>
-                <p>Email: {formData.email}</p>
-                <p>Status: {formData.isRefugee ? 'Refugee' : 'Non-refugee'}</p>
-                {!formData.isRefugee && (
-                  <p>Laptop: {formData.hasLaptop ? 'Yes' : 'No'}</p>
-                )}
-                <p>Selected Date: {formData.selectedDate}</p>
-              </div>
-
-              {error && (
-                <div className="rounded-md bg-red-50 p-4">
-                  <div className="flex">
-                    <div className="ml-3">
-                      <h3 className="text-sm font-medium text-red-800">{error}</h3>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {success && (
-                <div className="rounded-md bg-green-50 p-4">
-                  <div className="flex">
-                    <div className="ml-3">
-                      <h3 className="text-sm font-medium text-green-800">
-                        Booking successful! Redirecting to test portal...
-                      </h3>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="confirm"
-                  required
-                  className="h-4 w-4 text-indigo-600 border-gray-300 rounded"
-                  checked={formData.confirmedAttendance}
-                  onChange={(e) => updateFormData('confirmedAttendance', e.target.checked)}
-                />
-                <label htmlFor="confirm" className="ml-2 block text-sm text-gray-900">
-                  I confirm that I will attend the test in person on the selected date
-                </label>
-              </div>
-            </div>
-          )}
-
-          <div className="flex justify-between">
-            {step > 1 && (
-              <button
-                type="button"
-                onClick={() => setStep(step - 1)}
-                className="bg-gray-200 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-300"
-              >
-                Back
-              </button>
-            )}
-            <button
-              type="submit"
-              disabled={isLoading}
-              className={`bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 ml-auto ${
-              isLoading ? 'opacity-50 cursor-not-allowed' : ''
-              }`}   
-            >
-              {isLoading ? 'Processing...' : step === 5 ? 'Submit' : 'Continue'}
-            </button>
           </div>
-        </form>
+        
+          {error && (
+            <Alert 
+              type="error" 
+              title="Registration Error"
+              dismissible
+              onDismiss={() => setError('')}
+              className="mb-6"
+            >
+              {error}
+            </Alert>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Step 1: Personal Information */}
+            {step === 1 && (
+              <div className="space-y-6">
+                <FormField
+                  label="Full Name"
+                  required
+                  helpText="Enter your full name as it appears on your ID"
+                >
+                  <Input
+                    type="text"
+                    placeholder="John Doe"
+                    value={formData.name}
+                    onChange={(e) => updateFormData('name', e.target.value)}
+                    required
+                    icon={
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    }
+                  />
+                </FormField>
+
+                <FormField
+                  label="Email Address"
+                  required
+                  helpText="We'll send test updates and results to this email"
+                  error={formData.email && !validateEmail(formData.email) ? 'Please enter a valid email address' : ''}
+                >
+                  <Input
+                    type="email"
+                    placeholder="john@example.com"
+                    value={formData.email}
+                    onChange={(e) => updateFormData('email', e.target.value)}
+                    required
+                    error={formData.email && !validateEmail(formData.email)}
+                    icon={
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                    }
+                  />
+                </FormField>
+              </div>
+            )}
+
+            {/* Step 2: Refugee Status */}
+            {step === 2 && (
+              <div className="space-y-6">
+                <FormField
+                  label="Are you a refugee or asylum seeker?"
+                  required
+                  helpText="This helps us provide appropriate support and may affect available test dates"
+                >
+                  <div className="space-y-3">
+                    {[
+                      { value: true, label: 'Yes, I am a refugee or asylum seeker' },
+                      { value: false, label: 'No, I am not a refugee or asylum seeker' }
+                    ].map((option) => (
+                      <label key={option.value.toString()} className="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="isRefugee"
+                          value={option.value}
+                          checked={formData.isRefugee === option.value}
+                          onChange={(e) => updateFormData('isRefugee', e.target.value === 'true')}
+                          className="h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
+                          required
+                        />
+                        <span className="ml-3 text-gray-900">{option.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </FormField>
+              </div>
+            )}
+
+            {/* Step 3: Laptop Question */}
+            {step === 3 && (
+              <div className="space-y-6">
+                <FormField
+                  label="Will you bring your own laptop?"
+                  required
+                  helpText="We can provide a laptop if you don't have one, but bringing your own is preferred"
+                >
+                  <div className="space-y-3">
+                    {[
+                      { value: true, label: 'Yes, I will bring my own laptop', icon: '💻' },
+                      { value: false, label: 'No, please provide a laptop for me', icon: '🏢' }
+                    ].map((option) => (
+                      <label key={option.value.toString()} className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="hasLaptop"
+                          value={option.value}
+                          checked={formData.hasLaptop === option.value}
+                          onChange={(e) => updateFormData('hasLaptop', e.target.value === 'true')}
+                          className="h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
+                          required
+                        />
+                        <span className="ml-3 text-2xl">{option.icon}</span>
+                        <span className="ml-3 text-gray-900">{option.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </FormField>
+              </div>
+            )}
+
+            {/* Step 4: Date Selection */}
+            {step === 4 && (
+              <div className="space-y-6">
+                <FormField
+                  label="Select Test Date"
+                  required
+                  helpText="Choose from available dates within the next three weeks"
+                >
+                  <div className="space-y-3 max-h-64 overflow-y-auto">
+                    {(formData.isRefugee ? refugeeDates : regularDates)
+                      .filter(dateObj => isDateVisible(dateObj.date))
+                      .map((dateObj) => {
+                        const availableSpots = getAvailableSpots(dateObj.date, formData.hasLaptop);
+                        const isAvailable = availableSpots > 0;
+                        
+                        return (
+                          <label 
+                            key={dateObj.date} 
+                            className={`flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-colors ${
+                              isAvailable 
+                                ? 'border-gray-200 hover:bg-gray-50' 
+                                : 'border-gray-100 bg-gray-50 cursor-not-allowed'
+                            }`}
+                          >
+                            <div className="flex items-center">
+                              <input
+                                type="radio"
+                                name="selectedDate"
+                                value={dateObj.date}
+                                checked={formData.selectedDate === dateObj.date}
+                                onChange={(e) => updateFormData('selectedDate', e.target.value)}
+                                disabled={!isAvailable}
+                                className="h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
+                                required
+                              />
+                              <div className="ml-3">
+                                <span className={`font-medium ${isAvailable ? 'text-gray-900' : 'text-gray-400'}`}>
+                                  {dateObj.date}
+                                </span>
+                                <p className="text-sm text-gray-500">10:00 AM - 1:00 PM</p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <Badge 
+                                variant={isAvailable ? 'success' : 'secondary'}
+                                size="sm"
+                              >
+                                {isAvailable ? `${availableSpots} spots left` : 'Full'}
+                              </Badge>
+                            </div>
+                          </label>
+                        );
+                      })}
+                  </div>
+                </FormField>
+              </div>
+            )}
+
+            {/* Step 5: Confirmation */}
+            {step === 5 && (
+              <div className="space-y-6">
+                <Alert type="info" title="Please Review Your Information">
+                  Confirm all details are correct before submitting your registration.
+                </Alert>
+
+                <div className="bg-gray-50 p-6 rounded-lg space-y-4">
+                  <h3 className="font-semibold text-gray-900">Registration Summary</h3>
+                  
+                  <div className="grid gap-3 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Name:</span>
+                      <span className="font-medium">{formData.name}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Email:</span>
+                      <span className="font-medium">{formData.email}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Test Date:</span>
+                      <span className="font-medium">{formData.selectedDate}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Laptop:</span>
+                      <Badge variant={formData.hasLaptop ? 'success' : 'secondary'} size="sm">
+                        {formData.hasLaptop ? 'Bringing Own' : 'Using Provided'}
+                      </Badge>
+                    </div>
+                    {formData.isRefugee && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Status:</span>
+                        <Badge variant="info" size="sm">Refugee Applicant</Badge>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <FormField>
+                  <label className="flex items-start">
+                    <input
+                      type="checkbox"
+                      required
+                      className="h-4 w-4 text-indigo-600 border-gray-300 rounded mt-1"
+                      checked={formData.confirmedAttendance}
+                      onChange={(e) => updateFormData('confirmedAttendance', e.target.checked)}
+                    />
+                    <span className="ml-3 text-sm text-gray-900">
+                      I confirm that I will attend the test in person on the selected date and understand 
+                      that missing the test may require rescheduling.
+                    </span>
+                  </label>
+                </FormField>
+              </div>
+            )}
+
+            {/* Navigation Buttons */}
+            <div className="flex justify-between pt-6 border-t border-gray-200">
+              {step > 1 && (
+                <Button
+                  type="button"
+                  onClick={() => setStep(step - 1)}
+                  variant="secondary"
+                  icon={
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  }
+                >
+                  Back
+                </Button>
+              )}
+              
+              <div className="ml-auto">
+                {step === 5 ? (
+                  <LoadingButton
+                    type="submit"
+                    isLoading={isLoading}
+                    loadingText="Submitting Registration..."
+                    variant="primary"
+                    size="lg"
+                    icon={
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    }
+                    iconPosition="right"
+                  >
+                    Complete Registration
+                  </LoadingButton>
+                ) : (
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    icon={
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    }
+                    iconPosition="right"
+                  >
+                    Continue
+                  </Button>
+                )}
+              </div>
+            </div>
+          </form>
+        </Card>
       </div>
     </div>
   );

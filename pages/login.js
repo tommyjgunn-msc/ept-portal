@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/router';
 import { FormField, Input, Alert, Card } from '../components/UIDesignSystem';
 import { LoadingButton } from '../components/LoadingStates';
+import { useToast } from '../components/ToastContext';
 
 export default function Login() {
   const [eptId, setEptId] = useState('');

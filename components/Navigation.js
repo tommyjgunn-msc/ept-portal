@@ -1,5 +1,5 @@
-// components/Navigation.js - V4 Enhanced Navigation
-import { useState, useEffect } from 'react';
+// components/Navigation.js - OPTIMIZED VERSION (REPLACE EXISTING)
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useTestMode } from '@/context/TestModeContext';
@@ -35,6 +35,32 @@ const NavigationSkeleton = () => (
   </nav>
 );
 
+// Simple cache implementation for API responses
+const createCache = () => {
+  const cache = new Map();
+  const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+  
+  return {
+    get: (key) => {
+      const item = cache.get(key);
+      if (!item) return null;
+      
+      if (Date.now() - item.timestamp > CACHE_DURATION) {
+        cache.delete(key);
+        return null;
+      }
+      
+      return item.data;
+    },
+    set: (key, data) => {
+      cache.set(key, { data, timestamp: Date.now() });
+    },
+    clear: () => cache.clear()
+  };
+};
+
+const apiCache = createCache();
+
 export default function Navigation() {
   const [userData, setUserData] = useState(null);
   const [bookingDetails, setBookingDetails] = useState(null);
@@ -43,13 +69,72 @@ export default function Navigation() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const router = useRouter();
   const { getCurrentTime, isTestMode } = useTestMode();
+  
+  // Refs to prevent unnecessary re-renders and API calls
+  const currentPathRef = useRef(router.pathname);
+  const authCheckTimeoutRef = useRef(null);
+  const lastAuthCheckRef = useRef(0);
+  
+  // Memoize static values
+  const isHomePage = useMemo(() => router.pathname === '/home', [router.pathname]);
+  const isLoginPage = useMemo(() => router.pathname === '/login', [router.pathname]);
+  const isTestPortal = useMemo(() => router.pathname === '/test-portal', [router.pathname]);
 
-  const isHomePage = router.pathname === '/home';
-  const isLoginPage = router.pathname === '/login';
-  const isTestPortal = router.pathname === '/test-portal';
+  // Optimized auth check with caching and debouncing
+  const checkUserAuth = useCallback(async (eptId, force = false) => {
+    const now = Date.now();
+    const AUTH_CACHE_KEY = `auth_${eptId}`;
+    const MIN_TIME_BETWEEN_CHECKS = 30000; // 30 seconds
+    
+    // Skip if recently checked and not forced
+    if (!force && (now - lastAuthCheckRef.current) < MIN_TIME_BETWEEN_CHECKS) {
+      return;
+    }
+    
+    // Check cache first
+    const cachedAuth = apiCache.get(AUTH_CACHE_KEY);
+    if (cachedAuth && !force) {
+      setUserData(cachedAuth);
+      return;
+    }
+    
+    try {
+      const response = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ eptId })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setUserData(data);
+        apiCache.set(AUTH_CACHE_KEY, data);
+        lastAuthCheckRef.current = now;
+      } else {
+        setUserData(null);
+        apiCache.set(AUTH_CACHE_KEY, null);
+      }
+    } catch (error) {
+      console.warn('Auth check failed:', error);
+      setUserData(null);
+    }
+  }, []);
 
+  // Optimized user data loading with debouncing
   useEffect(() => {
-    const checkUserData = async () => {
+    // Clear previous timeout
+    if (authCheckTimeoutRef.current) {
+      clearTimeout(authCheckTimeoutRef.current);
+    }
+    
+    // Only run when path actually changes
+    if (currentPathRef.current === router.pathname && userData !== null) {
+      return;
+    }
+    currentPathRef.current = router.pathname;
+    
+    // Debounce auth checks to prevent rapid API calls
+    authCheckTimeoutRef.current = setTimeout(async () => {
       setIsLoading(true);
       
       try {
@@ -59,42 +144,48 @@ export default function Navigation() {
         if (storedUserData) {
           const parsedUserData = JSON.parse(storedUserData);
           if (parsedUserData.eptId) {
-            const response = await fetch('/api/auth', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ eptId: parsedUserData.eptId })
-            });
+            // Set user data immediately from session storage
+            setUserData(parsedUserData);
             
-            if (response.ok) {
-              const data = await response.json();
-              setUserData(data);
-            } else {
-              setUserData(null);
-            }
+            // Then verify in background (non-blocking)
+            checkUserAuth(parsedUserData.eptId);
           }
+        } else {
+          setUserData(null);
         }
 
         if (storedBookingDetails) {
           setBookingDetails(JSON.parse(storedBookingDetails));
+        } else {
+          setBookingDetails(null);
         }
       } catch (error) {
-        console.error('Error fetching user details:', error);
+        console.warn('Error loading navigation data:', error);
         setUserData(null);
+        setBookingDetails(null);
       } finally {
         setIsLoading(false);
       }
-    };
-
-    checkUserData();
-  }, [router.pathname]);
-
-  useEffect(() => {
-    if (bookingDetails?.selectedDate) {
-      if (isTestMode) {
-        setIsTestTime(true);
-        return;
+    }, 100); // Short debounce
+    
+    return () => {
+      if (authCheckTimeoutRef.current) {
+        clearTimeout(authCheckTimeoutRef.current);
       }
-      
+    };
+  }, [router.pathname, checkUserAuth, userData]);
+
+  // Optimized test time calculation with memoization
+  const testTimeCalculation = useMemo(() => {
+    if (!bookingDetails?.selectedDate) {
+      return { isTestTime: false, isTestActive: false };
+    }
+
+    if (isTestMode) {
+      return { isTestTime: true, isTestActive: true };
+    }
+    
+    try {
       const now = getCurrentTime();
       const is10AM = now.getHours() >= 10;
       const [, day, month] = bookingDetails.selectedDate.match(/(\d+)\s+(\w+)/);
@@ -103,18 +194,67 @@ export default function Navigation() {
                        testDate.getMonth() === now.getMonth() &&
                        testDate.getFullYear() === now.getFullYear();
 
-      setIsTestTime(isSameDay && is10AM);
+      const calculatedIsTestTime = isSameDay && is10AM;
+      return { 
+        isTestTime: calculatedIsTestTime, 
+        isTestActive: calculatedIsTestTime || isTestMode 
+      };
+    } catch (error) {
+      console.warn('Error calculating test time:', error);
+      return { isTestTime: false, isTestActive: false };
     }
-  }, [bookingDetails, isTestMode, getCurrentTime]);
+  }, [bookingDetails?.selectedDate, isTestMode, getCurrentTime]);
 
-  const handleSignOut = () => {
-    sessionStorage.removeItem('userData');
-    sessionStorage.removeItem('bookingDetails');
-    router.push('/login');
-  };
+  // Update test time state only when calculation changes
+  useEffect(() => {
+    setIsTestTime(testTimeCalculation.isTestTime);
+  }, [testTimeCalculation.isTestTime]);
 
-  const shouldShowTestLink = isHomePage && bookingDetails;
-  const isTestActive = isTestTime || isTestMode;
+  // Optimized sign out handler
+  const handleSignOut = useCallback(() => {
+    try {
+      sessionStorage.removeItem('userData');
+      sessionStorage.removeItem('bookingDetails');
+      apiCache.clear(); // Clear API cache
+      setUserData(null);
+      setBookingDetails(null);
+      router.push('/login');
+    } catch (error) {
+      console.warn('Error during sign out:', error);
+      // Force navigation even if storage clear fails
+      window.location.href = '/login';
+    }
+  }, [router]);
+
+  // Close menu on route change
+  useEffect(() => {
+    setUserMenuOpen(false);
+  }, [router.pathname]);
+
+  // Close menu on outside click
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (userMenuOpen && !event.target.closest('.user-menu')) {
+        setUserMenuOpen(false);
+      }
+    };
+
+    if (userMenuOpen) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [userMenuOpen]);
+
+  // Memoize computed values
+  const shouldShowTestLink = useMemo(() => 
+    isHomePage && bookingDetails, 
+    [isHomePage, bookingDetails]
+  );
+  
+  const isTestActive = useMemo(() => 
+    testTimeCalculation.isTestActive, 
+    [testTimeCalculation.isTestActive]
+  );
 
   // Show skeleton loader while loading
   if (isLoading && !isLoginPage) {
@@ -218,10 +358,12 @@ export default function Navigation() {
               )}
 
               {/* User Menu Dropdown */}
-              <div className="relative">
+              <div className="relative user-menu">
                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
                   className="flex items-center p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
+                  aria-expanded={userMenuOpen}
+                  aria-haspopup="true"
                 >
                   <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center">
                     <span className="text-white text-sm font-medium">

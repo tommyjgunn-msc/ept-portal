@@ -1,4 +1,4 @@
-// pages/test-portal.js
+// pages/test-portal.js - OPTIMIZED VERSION (REPLACE EXISTING)
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import { useTestMode } from '@/context/TestModeContext';
@@ -123,6 +123,8 @@ const useOptimizedTimer = (initialTime, onTimeUp, testType, timerSpeed = 1) => {
 
   // Handle visibility change for performance
   useEffect(() => {
+    if (typeof document === 'undefined') return;
+    
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         lastUpdateRef.current = Date.now(); // Reset timer reference when becoming visible

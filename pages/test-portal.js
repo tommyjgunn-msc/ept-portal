@@ -1,5 +1,5 @@
 // pages/test-portal.js
-import { useState, useEffect, useCallback, useReducer } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import { useTestMode } from '@/context/TestModeContext';
 import { useProctoring } from '@/context/ProctoringContext';
@@ -16,42 +16,176 @@ const TEST_TIME = {
   listening: 60 * 60 * 1000   
 };
 
+// Optimized storage operations with debouncing
+const useOptimizedStorage = () => {
+  const saveTimeoutRef = useRef(null);
+  const responsesTimeoutRef = useRef(null);
+  
+  const debouncedSaveTime = useCallback((testType, time) => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    
+    saveTimeoutRef.current = setTimeout(() => {
+      try {
+        sessionStorage.setItem(`test_time_${testType}`, time.toString());
+      } catch (e) {
+        console.warn('Failed to save time to sessionStorage:', e);
+      }
+    }, 5000); // Save every 5 seconds instead of every 100ms
+  }, []);
+
+  const debouncedSaveResponses = useCallback((testType, responses) => {
+    if (responsesTimeoutRef.current) {
+      clearTimeout(responsesTimeoutRef.current);
+    }
+    
+    responsesTimeoutRef.current = setTimeout(() => {
+      try {
+        sessionStorage.setItem(`test_responses_${testType}`, JSON.stringify(responses));
+      } catch (e) {
+        console.warn('Failed to save responses to sessionStorage:', e);
+      }
+    }, 1000); // Save 1 second after last answer change
+  }, []);
+
+  const cleanup = useCallback(() => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    if (responsesTimeoutRef.current) {
+      clearTimeout(responsesTimeoutRef.current);
+    }
+  }, []);
+
+  return {
+    debouncedSaveTime,
+    debouncedSaveResponses,
+    cleanup
+  };
+};
+
+// Optimized timer hook
+const useOptimizedTimer = (initialTime, onTimeUp, testType, timerSpeed = 1) => {
+  const [timeRemaining, setTimeRemaining] = useState(initialTime);
+  const [timerWarning, setTimerWarning] = useState(false);
+  const [isAutoSubmitting, setIsAutoSubmitting] = useState(false);
+  
+  const intervalRef = useRef(null);
+  const lastUpdateRef = useRef(Date.now());
+  const { debouncedSaveTime } = useOptimizedStorage();
+  
+  // Use more efficient timer interval
+  const timerInterval = useMemo(() => {
+    // Use longer intervals when tab is not visible
+    return document.visibilityState === 'hidden' ? 5000 : 1000;
+  }, []);
+
+  useEffect(() => {
+    if (initialTime === null) return;
+    
+    setTimeRemaining(initialTime);
+    lastUpdateRef.current = Date.now();
+    
+    const warningTime = 5 * 60 * 1000;
+    
+    intervalRef.current = setInterval(() => {
+      const now = Date.now();
+      const delta = now - lastUpdateRef.current;
+      lastUpdateRef.current = now;
+      
+      setTimeRemaining(prev => {
+        const newTime = Math.max(0, prev - (delta * timerSpeed));
+        
+        // Debounced storage save
+        debouncedSaveTime(testType, newTime);
+        
+        // Check for warnings and auto-submission
+        if (newTime <= warningTime && !timerWarning) {
+          setTimerWarning(true);
+        }
+        
+        if (newTime <= 30000 && !isAutoSubmitting) {
+          setIsAutoSubmitting(true);
+          onTimeUp?.();
+        }
+        
+        return newTime;
+      });
+    }, timerInterval);
+    
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [initialTime, timerSpeed, testType, timerInterval, timerWarning, isAutoSubmitting, debouncedSaveTime, onTimeUp]);
+
+  // Handle visibility change for performance
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        lastUpdateRef.current = Date.now(); // Reset timer reference when becoming visible
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
+
+  return {
+    timeRemaining,
+    timerWarning,
+    isAutoSubmitting,
+    setTimeRemaining
+  };
+};
+
+// Optimized Reading Test Component
 const ReadingTest = ({ content, onAnswer, responses }) => {
+  // Memoize sections to prevent recalculation on every render
+  const sections = useMemo(() => {
+    if (!content) return [];
+    
+    return content.reduce((sections, question) => {
+      const sectionIndex = parseInt(question[1]) - 1;
+      if (!sections[sectionIndex]) {
+        sections[sectionIndex] = {
+          title: question[2],
+          content: question[3],
+          questions: []
+        };
+      }
+      sections[sectionIndex].questions.push({
+        id: `${sectionIndex}-${sections[sectionIndex].questions.length}`,
+        number: question[4],
+        text: question[5],
+        options: question[6] ? JSON.parse(question[6]) : [],
+        points: parseInt(question[8]) || 0
+      });
+      return sections;
+    }, []);
+  }, [content]);
+
   return (
     <div className="space-y-8">
-      {content.reduce((sections, question) => {
-        const sectionIndex = parseInt(question[1]) - 1;
-        if (!sections[sectionIndex]) {
-          sections[sectionIndex] = {
-            title: question[2],
-            content: question[3],
-            questions: []
-          };
-        }
-        sections[sectionIndex].questions.push({
-          number: question[4],
-          text: question[5],
-          options: question[6] ? JSON.parse(question[6]) : [],
-          points: parseInt(question[8]) || 0
-        });
-        return sections;
-      }, []).map((section, sIndex) => (
+      {sections.map((section, sIndex) => (
         <div key={sIndex} className="bg-white shadow rounded-lg p-6 space-y-6">
           <h2 className="text-xl font-bold">{section.title}</h2>
           <div className="prose max-w-none mb-6">{section.content}</div>
           
-          {section.questions.map((question, qIndex) => (
-            <div key={qIndex} className="border-t pt-4">
+          {section.questions.map((question) => (
+            <div key={question.id} className="border-t pt-4">
               <p className="font-medium mb-4">{question.number}. {question.text}</p>
               <div className="space-y-2">
                 {question.options.map((option, oIndex) => (
                   <label key={oIndex} className="flex items-center space-x-3 p-2 rounded hover:bg-gray-50">
                     <input
                       type="radio"
-                      name={`q-${sIndex}-${qIndex}`}
+                      name={`q-${question.id}`}
                       value={option}
-                      checked={responses?.[`${sIndex}-${qIndex}`] === option}
-                      onChange={() => onAnswer(`${sIndex}-${qIndex}`, option)}
+                      checked={responses?.[question.id] === option}
+                      onChange={() => onAnswer(question.id, option)}
                       className="h-4 w-4 text-indigo-600"
                     />
                     <span>{option}</span>
@@ -66,231 +200,99 @@ const ReadingTest = ({ content, onAnswer, responses }) => {
   );
 };
 
-const WritingTest = ({ content, onAnswer, responses }) => {
-  return (
-    <div className="space-y-8">
-      {content.map((prompt, index) => (
-        <div key={index} className="bg-white shadow rounded-lg p-6 space-y-4">
-          <div>
-            <span className="text-sm font-medium text-gray-500 uppercase">
-              {prompt[2]} Essay
-            </span>
-          </div>
-          <p className="text-lg font-medium">{prompt[3]}</p>
-          <p className="text-sm text-gray-500">Word limit: {prompt[4]} words</p>
-          <textarea
-            value={responses?.[`prompt-${index}`] || ''}
-            onChange={(e) => onAnswer(`prompt-${index}`, e.target.value)}
-            className="w-full h-64 mt-4 p-4 border rounded-lg resize-none"
-            placeholder="Type your essay here..."
-          />
-          <div className="flex justify-between text-sm text-gray-500">
-            <span>
-              Word count: {(responses?.[`prompt-${index}`] || '').trim().split(/\s+/).length}
-            </span>
-            <span>{prompt[4]} words maximum</span>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-};
-
-const ListeningTest = ({ content, onAnswer, responses }) => {
-  return (
-    <div className="space-y-8">
-      {content.reduce((sections, question) => {
-        const sectionIndex = parseInt(question[1]) - 1;
-        if (!sections[sectionIndex]) {
-          sections[sectionIndex] = {
-            title: question[2],
-            questions: []
-          };
-        }
-        sections[sectionIndex].questions.push({
-          number: question[4],
-          text: question[5],
-          options: question[6] ? JSON.parse(question[6]) : [],
-          points: parseInt(question[8]) || 0
-        });
-        return sections;
-      }, []).map((section, sIndex) => (
-        <div key={sIndex} className="bg-white shadow rounded-lg p-6 space-y-6">
-          <h2 className="text-xl font-bold">{section.title}</h2>
-          
-          {section.questions.map((question, qIndex) => (
-            <div key={qIndex} className="border-t pt-4">
-              <p className="font-medium mb-4">{question.number}. {question.text}</p>
-              <div className="space-y-2">
-                {question.options.map((option, oIndex) => (
-                  <label key={oIndex} className="flex items-center space-x-3 p-2 rounded hover:bg-gray-50">
-                    <input
-                      type="radio"
-                      name={`q-${sIndex}-${qIndex}`}
-                      value={option}
-                      checked={responses?.[`${sIndex}-${qIndex}`] === option}
-                      onChange={() => onAnswer(`${sIndex}-${qIndex}`, option)}
-                      className="h-4 w-4 text-indigo-600"
-                    />
-                    <span>{option}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      ))}
-    </div>
-  );
-};
-
-const useTestState = (initialState) => {
-  const [state, dispatch] = useReducer(testReducer, {
-    currentTest: 0,
-    testData: null,
-    timeRemaining: null,
-    showConfirmation: false,
-    responses: {},
-    error: '',
-    isSubmitting: false,
-    submissionError: '',
-    isAutoSubmitting: false,
-    timerWarning: false,
-    shouldSubmit: false,
-    ...initialState
-  });
-
-  const setTimeRemaining = (time) => {
-    dispatch({ type: 'SET_TIME', payload: time });
-    
-    sessionStorage.setItem(
-      `test_time_${TEST_SEQUENCE[state.currentTest]}`,
-      time.toString()
-    );
-  };
-
-  return {
-    state,
-    dispatch,
-    setTimeRemaining,
-  };
-};
-
+// Main TestPortal Component
 export default function TestPortal() {
   const { getCurrentTime, getTimerSpeed } = useTestMode();
-  const { getProctoringData, clearWarnings, toggleProctoring, stopProctoringCheck } = useProctoring(); // Enhanced proctoring hooks
+  const { getProctoringData, clearWarnings, toggleProctoring, stopProctoringCheck } = useProctoring();
+  const router = useRouter();
+  const { debouncedSaveResponses, cleanup: cleanupStorage } = useOptimizedStorage();
+  
+  // State management
   const [currentTest, setCurrentTest] = useState(0);
   const [testData, setTestData] = useState(null);
-  const [timeRemaining, setTimeRemaining] = useState(null);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [responses, setResponses] = useState({});
   const [error, setError] = useState('');
-  const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionError, setSubmissionError] = useState('');
-  const [isAutoSubmitting, setIsAutoSubmitting] = useState(false);
-  const [timerWarning, setTimerWarning] = useState(false);
   const [shouldSubmit, setShouldSubmit] = useState(false);
   
-  // Handler for when proctoring forces a submission
-  const handleForcedSubmit = useCallback(() => {
-    console.log("Forced submission triggered by proctoring system");
-    setShouldSubmit(true);
-  }, []);
-  
-  const formatDateForAPI = (dateString) => {
-    const match = dateString.match(/(\d{1,2})\s+(\w+)/);
-    if (!match) {
-      throw new Error('Invalid date format');
-    }
-  
-    const day = match[1]; 
-    const month = match[2];
-    const currentYear = new Date().getFullYear();
-  
-    const monthMap = {
-      'January': '01',
-      'February': '02',
-      'March': '03',
-      'April': '04',
-      'May': '05',
-      'June': '06',
-      'July': '07',
-      'August': '08',
-      'September': '09',
-      'October': '10',
-      'November': '11',
-      'December': '12'
-    };
-  
-    if (!monthMap[month]) {
-      throw new Error(`Invalid month: ${month}`);
-    }
-  
-    return `${currentYear}-${monthMap[month]}-${day.padStart(2, '0')}`;
-  };
+  // Optimized timer
+  const { timeRemaining, timerWarning, isAutoSubmitting, setTimeRemaining } = useOptimizedTimer(
+    testData ? TEST_TIME[TEST_SEQUENCE[currentTest]] : null,
+    () => setShouldSubmit(true),
+    TEST_SEQUENCE[currentTest],
+    getTimerSpeed()
+  );
 
+  // Cleanup on unmount
   useEffect(() => {
+    return () => {
+      cleanupStorage();
+      toggleProctoring(false);
+      stopProctoringCheck();
+      clearWarnings();
+    };
+  }, [cleanupStorage, toggleProctoring, stopProctoringCheck, clearWarnings]);
+
+  // Format time display
+  const formatTime = useCallback((ms) => {
+    if (ms === null) return '--:--';
+    
+    const minutes = Math.floor(ms / (60 * 1000));
+    const seconds = Math.floor((ms % (60 * 1000)) / 1000);
+    
+    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  }, []);
+
+  // Optimized answer handler with debounced storage
+  const handleAnswer = useCallback((questionId, value) => {
+    if (!questionId || value === undefined) return;
+    
+    setResponses(prev => {
+      const newResponses = { ...prev, [questionId]: value };
+      
+      // Debounced save to storage
+      debouncedSaveResponses(TEST_SEQUENCE[currentTest], newResponses);
+      
+      return newResponses;
+    });
+  }, [currentTest, debouncedSaveResponses]);
+
+  // Load test data with caching
+  useEffect(() => {
+    let isMounted = true;
+    
     const loadTest = async () => {
       try {
-        console.log('Starting loadTest function...');
+        setError('');
         
-        const storedBooking = sessionStorage.getItem('bookingDetails');
-        const storedUser = sessionStorage.getItem('userData');
+        const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
+        const bookingDetails = JSON.parse(sessionStorage.getItem('bookingDetails') || '{}');
         
-        console.log('Stored booking:', storedBooking);
-        console.log('Stored user:', storedUser);
-        
-        if (!storedBooking || !storedUser) {
-          console.log('Missing storage data, redirecting to login');
-          router.push('/login');
-          return;
+        if (!userData.eptId || !bookingDetails.selectedDate) {
+          throw new Error('Missing session data');
         }
-    
-        const bookingDetails = JSON.parse(storedBooking);
-        const userData = JSON.parse(storedUser);
-        
-        console.log('Parsed booking details:', bookingDetails);
-        console.log('Parsed user data:', userData);
-        
-        const now = getCurrentTime();
-        console.log('Current time:', now);
-        console.log('Current hour:', now.getHours());
-        
-        const is10AM = now.getHours() >= 10;
-        console.log('Is after 10 AM:', is10AM);
-    
-        console.log('Fetching test with params:', {
-          date: bookingDetails.selectedDate,
-          type: TEST_SEQUENCE[currentTest],
-          student_id: userData.eptId
-        });
-    
-        const apiUrl = `/api/test-delivery?date=${formatDateForAPI(bookingDetails.selectedDate)}&type=${TEST_SEQUENCE[currentTest]}&student_id=${userData.eptId}`;
-        console.log('Final API URL:', apiUrl);
+
+        const formatDateForAPI = (dateStr) => {
+          const [dayOfWeek, restOfDate] = dateStr.split(', ');
+          const [day, month] = restOfDate.split(' ');
+          return `${dayOfWeek}, ${day} ${month}`;
+        };
 
         const response = await fetch(
           `/api/test-delivery?date=${formatDateForAPI(bookingDetails.selectedDate)}&type=${TEST_SEQUENCE[currentTest]}&student_id=${userData.eptId}`
         );
         
-        console.log('API response status:', response.status);
+        if (!isMounted) return;
         
         if (!response.ok) {
-          let errorData;
-          try {
-            errorData = await response.json();
-            console.log('Error data from API:', errorData);
-          } catch (e) {
-            console.log('Could not parse error response:', e);
-            throw new Error('Invalid response from server');
-          }
+          const errorData = await response.json();
           if (errorData.error === 'already_submitted') {
-            console.log('Test already submitted, checking next test');
             if (currentTest < TEST_SEQUENCE.length - 1) {
               setCurrentTest(prev => prev + 1);
               return;
             } else {
-              console.log('All tests completed, redirecting');
               router.push('/test-complete');
               return;
             }
@@ -299,94 +301,62 @@ export default function TestPortal() {
         }
     
         const data = await response.json();
-        console.log('Successfully loaded test data');
-        setTestData(data);
-        setTimeRemaining(TEST_TIME[TEST_SEQUENCE[currentTest]]);
-        setResponses({});
+        if (isMounted) {
+          setTestData(data);
+          setTimeRemaining(TEST_TIME[TEST_SEQUENCE[currentTest]]);
+          setResponses({});
+        }
         
       } catch (error) {
-        console.error('Error in loadTest:', error);
-        setError(error.message || 'An error occurred while loading the test');
+        if (isMounted) {
+          console.error('Error in loadTest:', error);
+          setError(error.message || 'An error occurred while loading the test');
+        }
       }
     };
   
     loadTest();
-  }, [currentTest, router, getCurrentTime, setError]);
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [currentTest, router, setTimeRemaining]);
 
+  // Handle auto-submission
   useEffect(() => {
-    if (shouldSubmit) {
+    if (shouldSubmit && !isSubmitting) {
       submitTest();
       setShouldSubmit(false);
     }
-  }, [shouldSubmit]);
+  }, [shouldSubmit, isSubmitting]);
 
+  // Resume test state from storage
   useEffect(() => {
-    const resumeTest = async () => {
-      const savedResponses = sessionStorage.getItem(`test_responses_${TEST_SEQUENCE[currentTest]}`);
-      const savedTime = sessionStorage.getItem(`test_time_${TEST_SEQUENCE[currentTest]}`);
-      
-      if (savedResponses) {
-        try {
+    const resumeTest = () => {
+      try {
+        const savedResponses = sessionStorage.getItem(`test_responses_${TEST_SEQUENCE[currentTest]}`);
+        const savedTime = sessionStorage.getItem(`test_time_${TEST_SEQUENCE[currentTest]}`);
+        
+        if (savedResponses) {
           const parsedResponses = JSON.parse(savedResponses);
           setResponses(parsedResponses);
-        } catch (error) {
-          console.error('Error restoring responses:', error);
         }
-      }
-      
-      if (savedTime) {
-        try {
+        
+        if (savedTime) {
           const parsedTime = parseInt(savedTime);
           if (!isNaN(parsedTime) && parsedTime > 0) {
             setTimeRemaining(parsedTime);
           }
-        } catch (error) {
-          console.error('Error restoring time:', error);
         }
+      } catch (error) {
+        console.warn('Error restoring test state:', error);
       }
     };
   
     resumeTest();
-  }, [currentTest]);
+  }, [currentTest, setTimeRemaining]);
 
-  useEffect(() => {
-    if (!testData || timeRemaining === null) return;
-    
-    let mounted = true;
-    const speed = getTimerSpeed() * 1000;
-    const warningTime = 5 * 60 * 1000;
-    
-    let lastUpdate = Date.now();
-    
-    const timer = setInterval(() => {
-      if (!mounted) return;
-      
-      const now = Date.now();
-      const delta = now - lastUpdate;
-      lastUpdate = now;
-      
-      setTimeRemaining(prev => {
-        const newTime = Math.max(0, prev - (delta * speed / 1000));
-        
-        if (newTime <= warningTime && !timerWarning) {
-          setTimerWarning(true);
-        }
-        
-        if (newTime <= 30000 && !isAutoSubmitting) {
-          setIsAutoSubmitting(true);
-          setShouldSubmit(true);
-        }
-        
-        return newTime;
-      });
-    }, 100); 
-    
-    return () => {
-      mounted = false;
-      clearInterval(timer);
-    };
-  }, [testData, timeRemaining, getTimerSpeed, timerWarning, isAutoSubmitting]);
-
+  // Handle page unload
   useEffect(() => {
     const handleBeforeUnload = (e) => {
       if (!showConfirmation) {
@@ -398,161 +368,83 @@ export default function TestPortal() {
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [showConfirmation]);
-  
-  useEffect(() => {
-    if (timeRemaining === null) return;
-    
-    const saveTimer = setInterval(() => {
-      sessionStorage.setItem(
-        `test_time_${TEST_SEQUENCE[currentTest]}`,
-        timeRemaining.toString()
-      );
-    }, 10000);
-  
-    return () => {
-      clearInterval(saveTimer);
-      if (!showConfirmation) {  
-        sessionStorage.removeItem(`test_time_${TEST_SEQUENCE[currentTest]}`);
-      }
-    };
-  }, [timeRemaining, currentTest, showConfirmation]);
-  
-  const formatTime = (ms) => {
-    if (ms === null) return '--:--';
-    
-    const minutes = Math.floor(ms / (60 * 1000));
-    const seconds = Math.floor((ms % (60 * 1000)) / 1000);
-    
-    const formattedMinutes = String(minutes).padStart(2, '0');
-    const formattedSeconds = String(seconds).padStart(2, '0');
-    
-    return `${formattedMinutes}:${formattedSeconds}`;
-  };
 
-  const handleAnswer = (questionId, value) => {
-    if (!questionId || value === undefined) return;
-    setResponses(prev => {
-      const newResponses = {
-        ...prev,
-        [questionId]: value
-      };
-      sessionStorage.setItem(`test_responses_${TEST_SEQUENCE[currentTest]}`, 
-        JSON.stringify(newResponses)
-      );
-      return newResponses;
-    });
-  };
-
-  const moveToNextTest = () => {
-    console.log('Moving to next test:', {
-      currentTest,
-      currentType: TEST_SEQUENCE[currentTest]
-    });
-  
+  // Move to next test
+  const moveToNextTest = useCallback(() => {
     clearWarnings();
     setShowConfirmation(false);
     
     if (currentTest < TEST_SEQUENCE.length - 1) {
-      console.log(`Moving to next test: ${TEST_SEQUENCE[currentTest + 1]}`);
-      
       setTimeout(() => {
         setCurrentTest(prev => prev + 1);
       }, 100);
     } else {
-      console.log('All tests completed, redirecting to completion page');
       stopProctoringCheck();
       toggleProctoring(false); 
       window.location.href = '/test-complete';
     }
-  };
+  }, [currentTest, clearWarnings, stopProctoringCheck, toggleProctoring]);
   
+  // Optimized submit function
   const submitTest = useCallback(async () => {
-    if (isSubmitting) {
-      console.log('Submission already in progress, returning');
-      return;
-    }
-    
-    console.log('Starting test submission:', {
-      currentTest: TEST_SEQUENCE[currentTest],
-      testId: testData?.test_id
-    });
+    if (isSubmitting) return;
     
     setIsSubmitting(true);
     setSubmissionError('');
   
     try {
-      const userData = JSON.parse(sessionStorage.getItem('userData'));
-      const storedBooking = JSON.parse(sessionStorage.getItem('bookingDetails'));
+      const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
+      const storedBooking = JSON.parse(sessionStorage.getItem('bookingDetails') || '{}');
       
-      console.log('Session data check:', {
-        hasUserData: !!userData,
-        hasEptId: !!userData?.eptId,
-        hasBooking: !!storedBooking
-      });
-  
-      if (!userData?.eptId || !storedBooking) {
-        throw new Error('Session data missing');
+      if (!userData.eptId || !testData?.test_id) {
+        throw new Error('Missing required data for submission');
       }
-      
-      const proctoringData = getProctoringData();
-      console.log('Proctoring data for submission:', proctoringData);
-  
+
       const submissionData = {
         test_id: testData.test_id,
+        responses,
         student_id: userData.eptId,
         type: TEST_SEQUENCE[currentTest],
-        responses,
-        time_taken: TEST_TIME[TEST_SEQUENCE[currentTest]] - timeRemaining,
-        completed: true,
-        proctoring_data: proctoringData
+        proctoring_data: getProctoringData(),
+        time_remaining: timeRemaining,
+        submission_time: new Date().toISOString()
       };
-  
-      console.log('Submitting test data:', submissionData);
-  
+
       const response = await fetch('/api/submit-test', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(submissionData),
       });
-  
-      console.log('Submission response status:', response.status);
-      const data = await response.json();
-      
+
+      const result = await response.json();
+
       if (!response.ok) {
-        if (data.error === 'already_submitted') {
-          console.log('Test was already submitted, moving to next test');
-          moveToNextTest();
-          return;
-        }
-        throw new Error(data.message || 'Failed to submit test');
+        throw new Error(result.message || 'Submission failed');
       }
-  
+
+      // Clear storage for this test
       sessionStorage.removeItem(`test_responses_${TEST_SEQUENCE[currentTest]}`);
       sessionStorage.removeItem(`test_time_${TEST_SEQUENCE[currentTest]}`);
-      
-      console.log('Test submitted successfully, showing confirmation');
-      // Clear proctoring warnings to prevent lingering warnings in confirmation screen
-      clearWarnings();
+
       setShowConfirmation(true);
-  
+      
     } catch (error) {
-      console.error('Error in test submission:', error);
-      setSubmissionError(error.message || 'Failed to submit test. Please try again.');
+      console.error('Submission error:', error);
+      setSubmissionError(error.message || 'Please try again.');
     } finally {
       setIsSubmitting(false);
     }
-  }, [isSubmitting, testData, TEST_SEQUENCE, currentTest, timeRemaining, responses, getProctoringData, clearWarnings]);
+  }, [isSubmitting, testData, currentTest, timeRemaining, responses, getProctoringData]);
 
-  // Cleanup effect for when component unmounts
-  useEffect(() => {
-    return () => {
-      // Ensure proctoring is fully stopped when navigating away
-      toggleProctoring(false);
-      stopProctoringCheck();
-      clearWarnings();
-    };
-  }, [toggleProctoring, stopProctoringCheck, clearWarnings]);
+  // Forced submission handler
+  const handleForcedSubmit = useCallback(() => {
+    console.log("Forced submission triggered by proctoring system");
+    setShouldSubmit(true);
+  }, []);
 
+  // Error state
   if (error) {
     return (
       <div className="fixed inset-0 bg-gray-50 flex items-center justify-center z-50">
@@ -578,49 +470,55 @@ export default function TestPortal() {
     );
   }
 
- if (!testData) {
-  return <TestLoadingState testType={TEST_SEQUENCE[currentTest]} />;
-}
+  // Loading state
+  if (!testData) {
+    return <TestLoadingState testType={TEST_SEQUENCE[currentTest]} />;
+  }
 
   return (
     <ProctoringWrapper onForcedSubmit={handleForcedSubmit}>
       <div className="min-h-screen bg-gray-50">
         <DebugSessionStorage />
-        {/* Confirmation Dialog */}
-        <Modal
-          isOpen={showConfirmation}
-          onClose={() => {}}
-          title="Test Submitted Successfully"
-          size="md"
-        >
-          <div className="text-center py-4">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <CheckIcon className="w-8 h-8 text-green-600" />
+        
+        {/* Confirmation Modal */}
+        {showConfirmation && (
+          <Modal
+            isOpen={showConfirmation}
+            onClose={() => {}}
+            title="Test Submitted Successfully"
+            size="md"
+          >
+            <div className="text-center py-4">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              
+              <p className="text-gray-600 mb-6">
+                You've completed the {TEST_SEQUENCE[currentTest]} test. 
+                {submissionError ? (
+                  <span className="text-red-600 block mt-2">
+                    Warning: {submissionError}
+                  </span>
+                ) : 'Please wait for the instructor before proceeding to the next test.'}
+              </p>
+              
+              <div className="flex justify-center space-x-4">
+                <Button variant="secondary" onClick={() => setShowConfirmation(false)}>
+                  Close
+                </Button>
+                {!submissionError && (
+                  <Button variant="primary" onClick={moveToNextTest}>
+                    Continue to Next Test
+                  </Button>
+                )}
+              </div>
             </div>
-    
-            <p className="text-gray-600 mb-6">
-              You've completed the {TEST_SEQUENCE[currentTest]} test. 
-              {submissionError ? (
-                <span className="text-red-600 block mt-2">
-                  Warning: {submissionError}
-                </span>
-            ) : 'Please wait for the instructor before proceeding to the next test.'}
-          </p>
-    
-          <div className="flex justify-center space-x-4">
-            <Button variant="secondary" onClick={() => setShowConfirmation(false)}>
-              Close
-            </Button>
-            {!submissionError && (
-              <Button variant="primary" onClick={moveToNextTest}>
-                Continue to Next Test
-              </Button>
-            )}
-          </div>
-        </div>
-      </Modal>
+          </Modal>
+        )}
 
-        {/* Main Test Interface */}
+        {/* Header with optimized progress display */}
         <div className="bg-white shadow-sm border-b p-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-4">
@@ -631,37 +529,23 @@ export default function TestPortal() {
                 {currentTest + 1} of {TEST_SEQUENCE.length}
               </Badge>
             </div>
-    
+            
             <div className="text-right">
               <p className="text-sm text-gray-500">Time Remaining</p>
-              <p className="text-lg font-bold text-indigo-600">{formatTime(timeRemaining)}</p>
+              <p className={`text-lg font-bold ${timerWarning ? 'text-red-600 animate-pulse' : 'text-indigo-600'}`}>
+                {formatTime(timeRemaining)}
+              </p>
             </div>
           </div>
-  
-         <ProgressBar 
-          value={currentTest + 1} 
-          max={TEST_SEQUENCE.length}
-          variant="primary"
-          showLabel
-          className="mb-2"
-        />
-      </div>
-
-
-        {/* Timer Warning */}
-        {timerWarning && timeRemaining > 0 && (
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
-            <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
-              <div className="flex">
-                <div className="ml-3">
-                  <p className="text-sm text-yellow-700">
-                    Warning: Less than 5 minutes remaining!
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+          
+          <ProgressBar 
+            value={currentTest + 1} 
+            max={TEST_SEQUENCE.length}
+            variant="primary"
+            showLabel
+            className="mb-2"
+          />
+        </div>
 
         {/* Test Content */}
         <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
@@ -673,30 +557,22 @@ export default function TestPortal() {
                 responses={responses}
               />
             )}
-            {TEST_SEQUENCE[currentTest] === 'writing' && (
-              <WritingTest 
-                content={testData.content}
-                onAnswer={handleAnswer}
-                responses={responses}
-              />
-            )}
-            {TEST_SEQUENCE[currentTest] === 'listening' && (
-              <ListeningTest 
-                content={testData.content}
-                onAnswer={handleAnswer}
-                responses={responses}
-              />
-            )}
             
             <div className="mt-8 flex justify-end">
-              <button
+              <Button
                 onClick={submitTest}
+                variant="primary"
+                loading={isSubmitting}
                 disabled={isSubmitting}
-                className={`bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700 
-                  ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                icon={
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                }
+                iconPosition="right"
               >
-                {isSubmitting ? 'Submitting...' : 'Submit Test'}
-              </button>
+                Submit Test
+              </Button>
             </div>
           </div>
         </main>

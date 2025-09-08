@@ -1,4 +1,4 @@
-// components/Navigation.js - OPTIMIZED VERSION (REPLACE EXISTING)
+// components/Navigation.js
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -233,6 +233,8 @@ export default function Navigation() {
 
   // Close menu on outside click
   useEffect(() => {
+    if (typeof document === 'undefined') return;
+    
     const handleClickOutside = (event) => {
       if (userMenuOpen && !event.target.closest('.user-menu')) {
         setUserMenuOpen(false);

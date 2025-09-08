@@ -1,5 +1,5 @@
 // context/ProctoringContext.js
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
 
 const ProctoringContext = createContext();
 
@@ -15,144 +15,247 @@ export function ProctoringProvider({ children, isActive = false }) {
   const [multipleMonitorsDetected, setMultipleMonitorsDetected] = useState(false);
   const [focusEvents, setFocusEvents] = useState([]);
   const [hasStartedTest, setHasStartedTest] = useState(false);
+  
+  // Refs to track cleanup state
+  const cleanupRef = useRef({ isCleanedUp: false });
+  const eventListenersRef = useRef(new Set());
+  const timersRef = useRef(new Set());
+  
   const maxWarnings = 3;
+  const MAX_FOCUS_EVENTS = 100; // Prevent unlimited memory growth
 
+  // Cleanup function to remove all event listeners and timers
+  const cleanup = useCallback(() => {
+    if (cleanupRef.current.isCleanedUp) return;
+    
+    cleanupRef.current.isCleanedUp = true;
+    
+    // Clear all timers
+    timersRef.current.forEach(timer => clearTimeout(timer));
+    timersRef.current.clear();
+    
+    // Remove all event listeners
+    eventListenersRef.current.forEach(({ element, event, handler }) => {
+      element.removeEventListener(event, handler);
+    });
+    eventListenersRef.current.clear();
+    
+    // Exit fullscreen if active
+    if (isFullscreen && typeof document !== 'undefined') {
+      try {
+        if (document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        } else if (document.mozCancelFullScreen) {
+          document.mozCancelFullScreen();
+        } else if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) {
+          document.msExitFullscreen();
+        }
+      } catch (e) {
+        console.warn('Failed to exit fullscreen during cleanup:', e);
+      }
+    }
+  }, [isFullscreen]);
+
+  // Helper to register event listener with cleanup tracking
+  const addEventListenerWithCleanup = useCallback((element, event, handler, options) => {
+    if (cleanupRef.current.isCleanedUp) return;
+    
+    element.addEventListener(event, handler, options);
+    eventListenersRef.current.add({ element, event, handler });
+  }, []);
+
+  // Helper to add timer with cleanup tracking
+  const addTimerWithCleanup = useCallback((callback, delay) => {
+    if (cleanupRef.current.isCleanedUp) return null;
+    
+    const timer = setTimeout(callback, delay);
+    timersRef.current.add(timer);
+    return timer;
+  }, []);
+
+  // Initialize proctoring state
   useEffect(() => {
     setIsProctoringActive(isActive);
-    
-    return () => {
-      if (isFullscreen) {
-        exitFullscreen();
-      }
-      clearWarnings();
-    };
-  }, [isActive]);
+    return cleanup;
+  }, [isActive, cleanup]);
 
+  // Monitor screen changes (debounced)
   useEffect(() => {
     if (!isProctoringActive || !hasStartedTest || typeof window === 'undefined') return;
 
+    let debounceTimer = null;
+    
     const checkMonitors = () => {
-      if (window.screen && window.screen.availWidth) {
-        const isMultipleMonitors = 
-          window.screen.availWidth > 2560 || 
-          window.outerWidth < window.screen.availWidth * 0.95;
-        
-        setMultipleMonitorsDetected(isMultipleMonitors);
-        
-        if (isMultipleMonitors) {
-          setWarnings(prev => ({ ...prev, multipleMonitors: true }));
+      if (cleanupRef.current.isCleanedUp) return;
+      
+      if (debounceTimer) clearTimeout(debounceTimer);
+      
+      debounceTimer = addTimerWithCleanup(() => {
+        if (window.screen && window.screen.availWidth) {
+          const isMultipleMonitors = 
+            window.screen.availWidth > 2560 || 
+            window.outerWidth < window.screen.availWidth * 0.95;
+          
+          setMultipleMonitorsDetected(prev => {
+            if (prev !== isMultipleMonitors) {
+              if (isMultipleMonitors) {
+                setWarnings(prev => ({ ...prev, multipleMonitors: true }));
+              }
+              return isMultipleMonitors;
+            }
+            return prev;
+          });
         }
-      }
+      }, 300);
     };
 
     checkMonitors();
-    window.addEventListener('resize', checkMonitors);
+    addEventListenerWithCleanup(window, 'resize', checkMonitors);
     
     return () => {
-      window.removeEventListener('resize', checkMonitors);
+      if (debounceTimer) clearTimeout(debounceTimer);
     };
-  }, [isProctoringActive, hasStartedTest]);
+  }, [isProctoringActive, hasStartedTest, addEventListenerWithCleanup, addTimerWithCleanup]);
 
+  // Fullscreen management
   const requestFullscreen = useCallback(() => {
-    if (typeof document === 'undefined') return;
+    if (typeof document === 'undefined' || cleanupRef.current.isCleanedUp) return;
 
     const docEl = document.documentElement;
 
-    if (docEl.requestFullscreen) {
-      docEl.requestFullscreen();
-    } else if (docEl.mozRequestFullScreen) {
-      docEl.mozRequestFullScreen();
-    } else if (docEl.webkitRequestFullscreen) {
-      docEl.webkitRequestFullscreen();
-    } else if (docEl.msRequestFullscreen) {
-      docEl.msRequestFullscreen();
+    try {
+      if (docEl.requestFullscreen) {
+        docEl.requestFullscreen();
+      } else if (docEl.mozRequestFullScreen) {
+        docEl.mozRequestFullScreen();
+      } else if (docEl.webkitRequestFullscreen) {
+        docEl.webkitRequestFullscreen();
+      } else if (docEl.msRequestFullscreen) {
+        docEl.msRequestFullscreen();
+      }
+    } catch (e) {
+      console.warn('Failed to request fullscreen:', e);
     }
   }, []);
 
   const exitFullscreen = useCallback(() => {
-    if (typeof document === 'undefined') return;
+    if (typeof document === 'undefined' || cleanupRef.current.isCleanedUp) return;
 
-    if (document.exitFullscreen) {
-      document.exitFullscreen();
-    } else if (document.mozCancelFullScreen) {
-      document.mozCancelFullScreen();
-    } else if (document.webkitExitFullscreen) {
-      document.webkitExitFullscreen();
-    } else if (document.msExitFullscreen) {
-      document.msExitFullscreen();
+    try {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if (document.mozCancelFullScreen) {
+        document.mozCancelFullScreen();
+      } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+      } else if (document.msExitFullscreen) {
+        document.msExitFullscreen();
+      }
+    } catch (e) {
+      console.warn('Failed to exit fullscreen:', e);
     }
   }, []);
 
+  // Fullscreen change monitoring
   useEffect(() => {
     if (typeof document === 'undefined') return;
 
     const handleFullscreenChange = () => {
+      if (cleanupRef.current.isCleanedUp) return;
+      
       const isDocFullscreen = 
         document.fullscreenElement || 
         document.webkitFullscreenElement || 
         document.mozFullScreenElement || 
         document.msFullscreenElement;
       
-      setIsFullscreen(!!isDocFullscreen);
+      const newFullscreenState = !!isDocFullscreen;
       
-      // Only log warning if proctoring is active, has started the test, and exiting fullscreen
-      if (!isDocFullscreen && isProctoringActive && hasStartedTest) {
-        const timestamp = new Date().toISOString();
-        setFocusEvents(prev => [...prev, { type: 'fullscreen_exit', timestamp }]);
-        
-        setWarnings(prev => ({
-          ...prev,
-          fullscreen: prev.fullscreen + 1
-        }));
-      }
+      setIsFullscreen(prev => {
+        if (prev !== newFullscreenState) {
+          // Only log warning if proctoring is active, has started the test, and exiting fullscreen
+          if (!newFullscreenState && isProctoringActive && hasStartedTest) {
+            const timestamp = new Date().toISOString();
+            
+            setFocusEvents(prev => {
+              const newEvents = [...prev, { type: 'fullscreen_exit', timestamp }];
+              // Limit array size to prevent memory leaks
+              return newEvents.slice(-MAX_FOCUS_EVENTS);
+            });
+            
+            setWarnings(prev => ({
+              ...prev,
+              fullscreen: prev.fullscreen + 1
+            }));
+          }
+          return newFullscreenState;
+        }
+        return prev;
+      });
     };
 
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
-    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
-    
-    return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
-      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
-      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
-      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
-    };
-  }, [isProctoringActive, hasStartedTest]);
+    // Register all fullscreen event listeners
+    const events = ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'];
+    events.forEach(event => {
+      addEventListenerWithCleanup(document, event, handleFullscreenChange);
+    });
+  }, [isProctoringActive, hasStartedTest, addEventListenerWithCleanup]);
 
+  // Visibility change monitoring (debounced)
   useEffect(() => {
-    if (!isProctoringActive || !hasStartedTest || typeof window === 'undefined') return;
+    if (!isProctoringActive || !hasStartedTest || typeof document === 'undefined') return;
 
+    let debounceTimer = null;
+    
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
+      if (cleanupRef.current.isCleanedUp) return;
+      
+      if (debounceTimer) clearTimeout(debounceTimer);
+      
+      debounceTimer = addTimerWithCleanup(() => {
         const timestamp = new Date().toISOString();
-        setFocusEvents(prev => [...prev, { type: 'blur', timestamp }]);
+        const isHidden = document.visibilityState === 'hidden';
         
-        setWarnings(prev => ({
-          ...prev,
-          windowFocus: prev.windowFocus + 1
-        }));
-      } else if (document.visibilityState === 'visible') {
-        const timestamp = new Date().toISOString();
-        setFocusEvents(prev => [...prev, { type: 'focus', timestamp }]);
-      }
+        setFocusEvents(prev => {
+          const newEvents = [...prev, { 
+            type: isHidden ? 'blur' : 'focus', 
+            timestamp 
+          }];
+          return newEvents.slice(-MAX_FOCUS_EVENTS);
+        });
+        
+        if (isHidden) {
+          setWarnings(prev => ({
+            ...prev,
+            windowFocus: prev.windowFocus + 1
+          }));
+        }
+      }, 100);
     };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    addEventListenerWithCleanup(document, 'visibilitychange', handleVisibilityChange);
     
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (debounceTimer) clearTimeout(debounceTimer);
     };
-  }, [isProctoringActive, hasStartedTest]);
+  }, [isProctoringActive, hasStartedTest, addEventListenerWithCleanup, addTimerWithCleanup]);
 
-  // Copy-paste prevention
+  // Copy-paste and keyboard monitoring (optimized)
   useEffect(() => {
-    if (!isProctoringActive || !hasStartedTest || typeof window === 'undefined') return;
+    if (!isProctoringActive || !hasStartedTest || typeof document === 'undefined') return;
 
     const preventCopyPaste = (e) => {
+      if (cleanupRef.current.isCleanedUp) return;
+      
       e.preventDefault();
       const timestamp = new Date().toISOString();
-      setFocusEvents(prev => [...prev, { type: 'copy_paste', action: e.type, timestamp }]);
+      
+      setFocusEvents(prev => {
+        const newEvents = [...prev, { type: 'copy_paste', action: e.type, timestamp }];
+        return newEvents.slice(-MAX_FOCUS_EVENTS);
+      });
       
       setWarnings(prev => ({
         ...prev,
@@ -162,14 +265,21 @@ export function ProctoringProvider({ children, isActive = false }) {
     };
 
     const preventContextMenu = (e) => {
+      if (cleanupRef.current.isCleanedUp) return;
+      
       e.preventDefault();
       const timestamp = new Date().toISOString();
-      setFocusEvents(prev => [...prev, { type: 'right_click', timestamp }]);
+      
+      setFocusEvents(prev => {
+        const newEvents = [...prev, { type: 'right_click', timestamp }];
+        return newEvents.slice(-MAX_FOCUS_EVENTS);
+      });
       return false;
     };
 
     const preventKeyboardShortcuts = (e) => {
-      // Detect common keyboard shortcuts for copy/paste/print/etc.
+      if (cleanupRef.current.isCleanedUp) return;
+      
       const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
       const modifier = isMac ? e.metaKey : e.ctrlKey;
       
@@ -180,12 +290,16 @@ export function ProctoringProvider({ children, isActive = false }) {
       ) {
         e.preventDefault();
         const timestamp = new Date().toISOString();
-        setFocusEvents(prev => [...prev, { 
-          type: 'keyboard_shortcut', 
-          key: e.key,
-          modifier: modifier ? (isMac ? 'meta' : 'ctrl') : 'none',
-          timestamp 
-        }]);
+        
+        setFocusEvents(prev => {
+          const newEvents = [...prev, { 
+            type: 'keyboard_shortcut', 
+            key: e.key,
+            modifier: modifier ? (isMac ? 'meta' : 'ctrl') : 'none',
+            timestamp 
+          }];
+          return newEvents.slice(-MAX_FOCUS_EVENTS);
+        });
         
         setWarnings(prev => ({
           ...prev,
@@ -195,22 +309,21 @@ export function ProctoringProvider({ children, isActive = false }) {
       }
     };
 
-    document.addEventListener('copy', preventCopyPaste);
-    document.addEventListener('paste', preventCopyPaste);
-    document.addEventListener('cut', preventCopyPaste);
-    document.addEventListener('contextmenu', preventContextMenu);
-    document.addEventListener('keydown', preventKeyboardShortcuts);
-    
-    return () => {
-      document.removeEventListener('copy', preventCopyPaste);
-      document.removeEventListener('paste', preventCopyPaste);
-      document.removeEventListener('cut', preventCopyPaste);
-      document.removeEventListener('contextmenu', preventContextMenu);
-      document.removeEventListener('keydown', preventKeyboardShortcuts);
-    };
-  }, [isProctoringActive, hasStartedTest]);
+    // Register prevention events
+    const events = [
+      { type: 'copy', handler: preventCopyPaste },
+      { type: 'paste', handler: preventCopyPaste },
+      { type: 'cut', handler: preventCopyPaste },
+      { type: 'contextmenu', handler: preventContextMenu },
+      { type: 'keydown', handler: preventKeyboardShortcuts }
+    ];
 
-  // Check if we should force submit
+    events.forEach(({ type, handler }) => {
+      addEventListenerWithCleanup(document, type, handler);
+    });
+  }, [isProctoringActive, hasStartedTest, addEventListenerWithCleanup]);
+
+  // Memoized callbacks to prevent unnecessary re-renders
   const shouldForceSubmit = useCallback(() => {
     return (
       warnings.fullscreen >= maxWarnings ||
@@ -219,7 +332,6 @@ export function ProctoringProvider({ children, isActive = false }) {
     );
   }, [warnings, maxWarnings]);
 
-  // Clear all warnings
   const clearWarnings = useCallback(() => {
     setWarnings({ 
       fullscreen: 0, 
@@ -236,10 +348,12 @@ export function ProctoringProvider({ children, isActive = false }) {
     if (active) {
       clearWarnings();
       setHasStartedTest(true);
+      cleanupRef.current.isCleanedUp = false;
     } else {
       setHasStartedTest(false);
+      cleanup();
     }
-  }, [clearWarnings]);
+  }, [clearWarnings, cleanup]);
 
   const startProctoringCheck = useCallback(() => {
     setHasStartedTest(true);
@@ -253,7 +367,7 @@ export function ProctoringProvider({ children, isActive = false }) {
   const getProctoringData = useCallback(() => {
     return {
       warnings,
-      focusEvents,
+      focusEvents: focusEvents.slice(-50), // Only return recent events to reduce payload
       multipleMonitorsDetected,
       hasStartedTest,
       shouldForceSubmit: shouldForceSubmit(),
@@ -261,25 +375,41 @@ export function ProctoringProvider({ children, isActive = false }) {
     };
   }, [warnings, focusEvents, multipleMonitorsDetected, hasStartedTest, shouldForceSubmit]);
 
+  // Memoize context value to prevent unnecessary re-renders
+  const contextValue = useMemo(() => ({
+    isProctoringActive,
+    isFullscreen,
+    warnings,
+    multipleMonitorsDetected,
+    focusEvents,
+    hasStartedTest,
+    requestFullscreen,
+    exitFullscreen,
+    toggleProctoring,
+    getProctoringData,
+    shouldForceSubmit,
+    clearWarnings,
+    startProctoringCheck,
+    stopProctoringCheck
+  }), [
+    isProctoringActive,
+    isFullscreen,
+    warnings,
+    multipleMonitorsDetected,
+    focusEvents,
+    hasStartedTest,
+    requestFullscreen,
+    exitFullscreen,
+    toggleProctoring,
+    getProctoringData,
+    shouldForceSubmit,
+    clearWarnings,
+    startProctoringCheck,
+    stopProctoringCheck
+  ]);
+
   return (
-    <ProctoringContext.Provider
-      value={{
-        isProctoringActive,
-        isFullscreen,
-        warnings,
-        multipleMonitorsDetected,
-        focusEvents,
-        hasStartedTest,
-        requestFullscreen,
-        exitFullscreen,
-        toggleProctoring,
-        getProctoringData,
-        shouldForceSubmit,
-        clearWarnings,
-        startProctoringCheck,
-        stopProctoringCheck
-      }}
-    >
+    <ProctoringContext.Provider value={contextValue}>
       {children}
     </ProctoringContext.Provider>
   );

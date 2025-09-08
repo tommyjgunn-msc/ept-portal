@@ -1,4 +1,5 @@
-// utils/performanceUtils.js
+// utils/performanceUtils.js - NEW FILE (Add to your project)
+import { useState, useEffect, useRef } from 'react';
 
 // Request caching utilities
 export class RequestCache {

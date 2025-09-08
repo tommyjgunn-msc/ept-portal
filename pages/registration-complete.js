@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { Card, Button, Badge, Alert } from '../components/UIDesignSystem';
 import { AppSkeleton } from '../components/LoadingStates';
+import { useToast } from '../components/ToastContext';
 
 export default function RegistrationComplete() {
   const [bookingDetails, setBookingDetails] = useState(null);

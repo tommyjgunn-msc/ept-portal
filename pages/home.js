@@ -1,8 +1,8 @@
 // pages/home.js
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { Card, Button, Badge, Alert, ProgressiveLoader } from '../components/UIDesignSystem';
-import { useToast } from '../components/ToastContext';
+import { Card, Button, Badge, Alert } from '../components/UIDesignSystem';
+import { ProgressiveLoader } from '../components/LoadingStates';
 
 export default function Home() {
   const [bookingDetails, setBookingDetails] = useState(null);

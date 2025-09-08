@@ -1,8 +1,8 @@
 // pages/registration-complete.js
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import { Card, Button, Badge, Alert, AppSkeleton } from '../components/UIDesignSystem';
-import { useToast } from '../components/ToastContext';
+import { Card, Button, Badge, Alert } from '../components/UIDesignSystem';
+import { AppSkeleton } from '../components/LoadingStates';
 
 export default function RegistrationComplete() {
   const [bookingDetails, setBookingDetails] = useState(null);

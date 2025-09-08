@@ -6,6 +6,8 @@ import { useProctoring } from '@/context/ProctoringContext';
 import ProctoringWrapper from '../components/ProctoringWrapper';
 import DebugSessionStorage from '../components/DebugSessionStorage';
 import { TestLoadingState } from '@/components/LoadingStates';
+import { ProgressBar, Badge } from '@/components/UIDesignSystem';
+import { Modal, Button } from '@/components/UIDesignSystem';
 
 const TEST_SEQUENCE = ['reading', 'writing', 'listening'];
 const TEST_TIME = {
@@ -585,64 +587,66 @@ export default function TestPortal() {
       <div className="min-h-screen bg-gray-50">
         <DebugSessionStorage />
         {/* Confirmation Dialog */}
-        {showConfirmation && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="max-w-md w-full bg-white shadow rounded-lg p-6 text-center m-4">
-              <h2 className="text-2xl font-bold mb-4">Test Submitted</h2>
-              <p className="text-gray-600 mb-6">
-                You've completed the {TEST_SEQUENCE[currentTest]} test. 
-                {submissionError ? (
-                  <span className="text-red-600 block mt-2">
-                    Warning: {submissionError}
-                  </span>
-                ) : 'Please wait for the instructor before proceeding to the next test.'}
-              </p>
-              <div className="flex space-x-4 justify-center">
-                {!submissionError && (
-                  <button
-                    onClick={moveToNextTest}
-                    className="bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700"
-                    disabled={isSubmitting}
-                  >
-                    {currentTest < TEST_SEQUENCE.length - 1 ? 'Start Next Test' : 'Complete Testing'}
-                  </button>
-                )}
-                {submissionError && (
-                  <button
-                    onClick={() => {
-                      setShowConfirmation(false);
-                      setSubmissionError('');
-                    }}
-                    className="bg-red-600 text-white px-6 py-2 rounded-md hover:bg-red-700"
-                  >
-                    Return to Test
-                  </button>
-                )}
-              </div>
+        <Modal
+          isOpen={showConfirmation}
+          onClose={() => {}}
+          title="Test Submitted Successfully"
+          size="md"
+        >
+          <div className="text-center py-4">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <CheckIcon className="w-8 h-8 text-green-600" />
             </div>
-          </div>
-        )}
-
-        {/* Main Test Interface */}
-        <div className="bg-white shadow">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex justify-between items-center">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900 capitalize">
-                  {TEST_SEQUENCE[currentTest]} Test
-                </h1>
-                <p className="text-sm text-gray-500 mt-1">
-                  {currentTest + 1} of {TEST_SEQUENCE.length}
-                </p>
-              </div>
-              <div className={`text-lg font-medium ${
-                timerWarning ? 'text-red-600' : 'text-gray-900'
-              }`}>
-                Time Remaining: {formatTime(timeRemaining)}
-              </div>
-            </div>
+    
+            <p className="text-gray-600 mb-6">
+              You've completed the {TEST_SEQUENCE[currentTest]} test. 
+              {submissionError ? (
+                <span className="text-red-600 block mt-2">
+                  Warning: {submissionError}
+                </span>
+            ) : 'Please wait for the instructor before proceeding to the next test.'}
+          </p>
+    
+          <div className="flex justify-center space-x-4">
+            <Button variant="secondary" onClick={() => setShowConfirmation(false)}>
+              Close
+            </Button>
+            {!submissionError && (
+              <Button variant="primary" onClick={moveToNextTest}>
+                Continue to Next Test
+              </Button>
+            )}
           </div>
         </div>
+      </Modal>
+
+        {/* Main Test Interface */}
+        <div className="bg-white shadow-sm border-b p-4">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-4">
+              <h1 className="text-2xl font-bold text-gray-900">
+                {TEST_SEQUENCE[currentTest].charAt(0).toUpperCase() + TEST_SEQUENCE[currentTest].slice(1)} Test
+              </h1>
+              <Badge variant="primary" size="md">
+                {currentTest + 1} of {TEST_SEQUENCE.length}
+              </Badge>
+            </div>
+    
+            <div className="text-right">
+              <p className="text-sm text-gray-500">Time Remaining</p>
+              <p className="text-lg font-bold text-indigo-600">{formatTime(timeRemaining)}</p>
+            </div>
+          </div>
+  
+         <ProgressBar 
+          value={currentTest + 1} 
+          max={TEST_SEQUENCE.length}
+          variant="primary"
+          showLabel
+          className="mb-2"
+        />
+      </div>
+
 
         {/* Timer Warning */}
         {timerWarning && timeRemaining > 0 && (

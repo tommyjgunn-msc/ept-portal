@@ -5,6 +5,7 @@ import { useTestMode } from '@/context/TestModeContext';
 import { useProctoring } from '@/context/ProctoringContext';
 import ProctoringWrapper from '../components/ProctoringWrapper';
 import DebugSessionStorage from '../components/DebugSessionStorage';
+import { TestLoadingState } from '@/components/LoadingStates';
 
 const TEST_SEQUENCE = ['reading', 'writing', 'listening'];
 const TEST_TIME = {
@@ -575,16 +576,9 @@ export default function TestPortal() {
     );
   }
 
-  if (!testData) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600 mx-auto"></div>
-          <p className="mt-4 text-xl text-gray-600">Loading test...</p>
-        </div>
-      </div>
-    );
-  }
+ if (!testData) {
+  return <TestLoadingState testType={TEST_SEQUENCE[currentTest]} />;
+}
 
   return (
     <ProctoringWrapper onForcedSubmit={handleForcedSubmit}>

@@ -1,5 +1,5 @@
 import { createContext, useContext, useState } from 'react';
-import { Toast } from '@/components/UIDesignSystem';
+import { Toast } from '../components/UIDesignSystem';
 
 const ToastContext = createContext();
 

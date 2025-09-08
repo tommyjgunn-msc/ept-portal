@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { Card, Button, Badge, Alert } from '../components/UIDesignSystem';
 import { ProgressiveLoader } from '../components/LoadingStates';
+import { useToast } from '../components/ToastContext';
 
 export default function Home() {
   const [bookingDetails, setBookingDetails] = useState(null);

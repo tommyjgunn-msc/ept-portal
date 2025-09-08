@@ -5,6 +5,7 @@ import { isWithinThreeWeeks } from '../utils/dateUtils';
 import { isFutureDate } from '../utils/dateUtils';
 import { Card, Button, FormField, Input, Alert, ProgressBar, Badge } from '../components/UIDesignSystem';
 import { LoadingButton } from '../components/LoadingStates';
+import { useToast } from '../components/ToastContext';
 
 export default function Booking() {
   const [step, setStep] = useState(1);

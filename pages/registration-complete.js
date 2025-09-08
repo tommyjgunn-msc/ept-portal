@@ -1,6 +1,7 @@
 // pages/registration-complete.js
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
+import { AppSkeleton } from '@/components/LoadingStates';
 
 export default function RegistrationComplete() {
   const [bookingDetails, setBookingDetails] = useState(null);
@@ -16,8 +17,8 @@ export default function RegistrationComplete() {
   }, [router]);
 
   if (!bookingDetails) {
-    return <div>Loading...</div>;
-  }
+  return <AppSkeleton />;
+}
 
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">

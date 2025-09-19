@@ -1,4 +1,4 @@
-// This file contains the test dates and capacities for both regular and refugee tests
+// This file contains the test dates. To be updated frequently.
 export const regularDates = [
     { date: 'Friday, 03 October', venues: 4, capacity: { withLaptop: 70, withoutLaptop: 30 } },
     { date: 'Friday, 10 October', venues: 4, capacity: { withLaptop: 70, withoutLaptop: 30 } },
@@ -12,10 +12,4 @@ export const regularDates = [
     { date: 'Friday, 05 December', venues: 4, capacity: { withLaptop: 70, withoutLaptop: 30 } },
     { date: 'Wednesday, 10 December', venues: 4, capacity: { withLaptop: 70, withoutLaptop: 30 } },
     { date: 'Friday, 12 December', venues: 4, capacity: { withLaptop: 70, withoutLaptop: 30 } },
-  ];
-  
-  export const refugeeDates = [
-    { date: 'Friday, 21 March', location: 'REMOTE TESTING AVAILABLE' },
-    { date: 'Friday, 11 April', location: 'REMOTE TESTING AVAILABLE' },
-    { date: 'Friday, 25 April', location: 'REMOTE TESTING AVAILABLE' },
   ];

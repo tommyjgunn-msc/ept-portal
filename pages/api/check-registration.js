@@ -12,7 +12,7 @@ export default async function handler(req, res) {
     
     const bookingsResponse = await sheets.spreadsheets.values.get({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
-      range: 'Bookings!A2:F',
+      range: 'Bookings!A2:E',
     });
 
     const bookings = bookingsResponse.data.values || [];
@@ -32,9 +32,8 @@ export default async function handler(req, res) {
         name: existingBooking[0],
         email: existingBooking[1],
         eptId: existingBooking[2],
-        isRefugee: existingBooking[3] === 'Yes',
-        hasLaptop: existingBooking[4] === 'Yes',
-        selectedDate: existingBooking[5]
+        hasLaptop: existingBooking[3] === 'Yes',
+        selectedDate: existingBooking[4]
       };
 
       return res.status(200).json({

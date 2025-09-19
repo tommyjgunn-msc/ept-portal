@@ -1,8 +1,8 @@
-import { regularDates, refugeeDates } from '../../utils/testDatesConfig';
+import { regularDates } from '../../utils/testDatesConfig';
 
 export default function handler(req, res) {
   try {
-    res.status(200).json({ regularDates, refugeeDates });
+    res.status(200).json({ regularDates });
   } catch (error) {
     console.error('Error fetching test dates:', error);
     res.status(500).json({ message: 'Failed to fetch test dates' });

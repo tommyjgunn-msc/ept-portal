@@ -1,5 +1,6 @@
 // pages/api/booking.js
 import { createBooking } from '../../utils/googleSheets'; 
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
@@ -14,12 +15,11 @@ export default async function handler(req, res) {
       email: !!bookingData.email,
       eptId: !!bookingData.eptId,
       selectedDate: !!bookingData.selectedDate,
-      isRefugee: bookingData.isRefugee,
       hasLaptop: bookingData.hasLaptop,
       confirmedAttendance: bookingData.confirmedAttendance
     });
 
-    const requiredFields = ['name', 'email', 'eptId', 'selectedDate', 'isRefugee'];
+    const requiredFields = ['name', 'email', 'eptId', 'selectedDate'];
     const missingFields = requiredFields.filter(field => {
       const value = bookingData[field];
       const isMissing = value === undefined || value === null || value === '';

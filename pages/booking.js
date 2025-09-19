@@ -12,7 +12,6 @@ export default function Booking() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    isRefugee: null,
     hasLaptop: null,
     selectedDate: '',
     confirmedAttendance: false
@@ -24,7 +23,6 @@ export default function Booking() {
   const [availableSpots, setAvailableSpots] = useState({});
   const [dateCapacity, setDateCapacity] = useState({});
   const [regularDates, setRegularDates] = useState([]); 
-  const [refugeeDates, setRefugeeDates] = useState([]);
   const { addToast } = useToast();
 
   const validateEmail = (email) => {
@@ -44,9 +42,8 @@ export default function Booking() {
       try {
         const response = await fetch('/api/test-dates');
         if (response.ok) {
-          const { regularDates, refugeeDates } = await response.json();
+          const { regularDates } = await response.json();
           setRegularDates(regularDates);
-          setRefugeeDates(refugeeDates);
         }
       } catch (error) {
         console.error('Error fetching test dates:', error);
@@ -86,441 +83,369 @@ export default function Booking() {
       : dateConfig.capacity.withoutLaptop - booked.withoutLaptop;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-  
-    if (!validateEmail(formData.email)) {
-      setError('Please enter a valid email address.');
-      addToast({
-        type: 'error',
-        title: 'Invalid Email',
-        message: 'Please enter a valid email address.'
-      });
-      return;
-    }
-  
-    if (step < 5) {
-      setStep(step + 1);
-      addToast({
-        type: 'success',
-        title: 'Step Completed',
-        message: `Moving to step ${step + 1} of 5`
-      });
-      return;
-    }
-
-    const userData = JSON.parse(sessionStorage.getItem('userData'));
-    if (!userData) {
-      setError('Session expired. Please login again.');
-      router.push('/login');
-      return;
-    }
-  
-    setIsLoading(true);
-    setError('');
-  
-    try {
-      const submissionData = {
-        ...formData,
-        eptId: userData.eptId,
-      };
-      
-      const response = await fetch('/api/booking', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(submissionData),
-      });
-  
-      const data = await response.json();
-  
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to create booking');
-      }
-  
-      setSuccess(true);
-      sessionStorage.setItem('bookingDetails', JSON.stringify({
-        ...formData,
-        eptId: userData.eptId,
-        bookingDate: new Date().toISOString()
-      }));
-
-      addToast({
-        type: 'success',
-        title: 'Registration Complete!',
-        message: `Your test is scheduled for ${formData.selectedDate}`
-      });
-      
-      router.push('/home');
-  
-    } catch (error) {
-      console.error('Booking error:', error);
-      setError(error.message || 'Failed to create booking');
-      
-      addToast({
-        type: 'error',
-        title: 'Registration Failed',
-        message: error.message || 'Please try again or contact support.'
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const isDateVisible = (dateStr) => {
-    const testDate = new Date(dateStr.split(',')[1]);
-    const now = new Date();
-    const threeWeeksFromNow = new Date();
-    threeWeeksFromNow.setDate(now.getDate() + 21);
-    
-    return testDate <= threeWeeksFromNow;
+  const isDateVisible = (date) => {
+    const parsedDate = parseTestDate(date);
+    return isFutureDate(parsedDate) && isWithinThreeWeeks(parsedDate);
   };
 
   const updateFormData = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const stepTitles = [
-    'Personal Information',
-    'Status Information', 
-    'Equipment Preference',
-    'Select Test Date',
-    'Confirm Registration'
+  const nextStep = () => {
+    if (step < 4) {
+      setStep(step + 1);
+    }
+  };
+
+  const prevStep = () => {
+    if (step > 1) {
+      setStep(step - 1);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (step < 4) {
+      nextStep();
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
+      
+      if (!userData.eptId) {
+        setError('EPT ID not found. Please go back to login.');
+        setIsLoading(false);
+        return;
+      }
+
+      const bookingData = {
+        ...formData,
+        eptId: userData.eptId
+      };
+
+      const response = await fetch('/api/booking', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(bookingData),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to create booking');
+      }
+
+      setSuccess(true);
+      addToast({
+        type: 'success',
+        title: 'Registration Successful!',
+        message: 'Your test registration has been confirmed.'
+      });
+
+      setTimeout(() => {
+        router.push('/');
+      }, 2000);
+
+    } catch (error) {
+      console.error('Booking error:', error);
+      setError(error.message || 'Registration failed. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (success) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md p-8 text-center">
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Registration Complete!</h2>
+          <p className="text-gray-600 mb-6">
+            Your test has been successfully scheduled. You'll receive a confirmation email shortly.
+          </p>
+          <Button onClick={() => router.push('/')} className="w-full">
+            Go to Dashboard
+          </Button>
+        </Card>
+      </div>
+    );
+  }
+
+  const steps = [
+    'Personal Info',
+    'Laptop Setup', 
+    'Select Date',
+    'Confirm'
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-2xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
-            EPT Registration
-          </h1>
-          <p className="text-gray-600">
-            Complete your registration for the English Proficiency Test
-          </p>
-        </div>
-
-        <Card className="p-8" elevation="lg">
-          {/* Progress indicator */}
-          <div className="mb-8">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold text-gray-900">
-                Step {step}: {stepTitles[step - 1]}
-              </h2>
-              <Badge variant="primary">{step} of 5</Badge>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50">
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-2xl mx-auto">
+          <Card className="p-8">
+            <div className="text-center mb-8">
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Book Your Test</h1>
+              <p className="text-gray-600">Complete your registration to schedule your English proficiency test</p>
             </div>
-            
-            <ProgressBar
-              value={step}
-              max={5}
-              variant="primary"
-              showLabel
-              className="mb-4"
-            />
 
-            <div className="flex justify-between text-xs text-gray-500">
-              {stepTitles.map((title, index) => (
-                <div
-                  key={index}
-                  className={`flex-1 text-center ${
-                    step > index + 1 ? 'text-green-600' : step === index + 1 ? 'text-indigo-600 font-medium' : ''
-                  }`}
-                >
-                  {title}
-                </div>
-              ))}
+            <div className="mb-8">
+              <ProgressBar current={step} total={4} className="mb-4" />
+              <div className="flex justify-between text-sm">
+                {steps.map((title, index) => (
+                  <div 
+                    key={index}
+                    className={`${
+                      step > index + 1 ? 'text-green-600' : step === index + 1 ? 'text-indigo-600 font-medium' : ''
+                    }`}
+                  >
+                    {title}
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        
-          {error && (
-            <Alert 
-              type="error" 
-              title="Registration Error"
-              dismissible
-              onDismiss={() => setError('')}
-              className="mb-6"
-            >
-              {error}
-            </Alert>
-          )}
+          
+            {error && (
+              <Alert 
+                type="error" 
+                title="Registration Error"
+                dismissible
+                onDismiss={() => setError('')}
+                className="mb-6"
+              >
+                {error}
+              </Alert>
+            )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Step 1: Personal Information */}
-            {step === 1 && (
-              <div className="space-y-6">
-                <FormField
-                  label="Full Name"
-                  required
-                  helpText="Enter your full name as it appears on your ID"
-                >
-                  <Input
-                    type="text"
-                    placeholder="John Doe"
-                    value={formData.name}
-                    onChange={(e) => updateFormData('name', e.target.value)}
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Step 1: Personal Information */}
+              {step === 1 && (
+                <div className="space-y-6">
+                  <FormField
+                    label="Full Name"
                     required
-                    icon={
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
-                    }
-                  />
-                </FormField>
-
-                <FormField
-                  label="Email Address"
-                  required
-                  helpText="We'll send test updates and results to this email"
-                  error={formData.email && !validateEmail(formData.email) ? 'Please enter a valid email address' : ''}
-                >
-                  <Input
-                    type="email"
-                    placeholder="john@example.com"
-                    value={formData.email}
-                    onChange={(e) => updateFormData('email', e.target.value)}
-                    required
-                    error={formData.email && !validateEmail(formData.email)}
-                    icon={
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                      </svg>
-                    }
-                  />
-                </FormField>
-              </div>
-            )}
-
-            {/* Step 2: Refugee Status */}
-            {step === 2 && (
-              <div className="space-y-6">
-                <FormField
-                  label="Are you a refugee or asylum seeker?"
-                  required
-                  helpText="This helps us provide appropriate support and may affect available test dates"
-                >
-                  <div className="space-y-3">
-                    {[
-                      { value: true, label: 'Yes, I am a refugee or asylum seeker' },
-                      { value: false, label: 'No, I am not a refugee or asylum seeker' }
-                    ].map((option) => (
-                      <label key={option.value.toString()} className="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="isRefugee"
-                          value={option.value}
-                          checked={formData.isRefugee === option.value}
-                          onChange={(e) => updateFormData('isRefugee', e.target.value === 'true')}
-                          className="h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
-                          required
-                        />
-                        <span className="ml-3 text-gray-900">{option.label}</span>
-                      </label>
-                    ))}
-                  </div>
-                </FormField>
-              </div>
-            )}
-
-            {/* Step 3: Laptop Question */}
-            {step === 3 && (
-              <div className="space-y-6">
-                <FormField
-                  label="Will you bring your own laptop?"
-                  required
-                  helpText="We can provide a laptop if you don't have one, but bringing your own is preferred"
-                >
-                  <div className="space-y-3">
-                    {[
-                      { value: true, label: 'Yes, I will bring my own laptop', icon: '💻' },
-                      { value: false, label: 'No, please provide a laptop for me', icon: '🏢' }
-                    ].map((option) => (
-                      <label key={option.value.toString()} className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="hasLaptop"
-                          value={option.value}
-                          checked={formData.hasLaptop === option.value}
-                          onChange={(e) => updateFormData('hasLaptop', e.target.value === 'true')}
-                          className="h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
-                          required
-                        />
-                        <span className="ml-3 text-2xl">{option.icon}</span>
-                        <span className="ml-3 text-gray-900">{option.label}</span>
-                      </label>
-                    ))}
-                  </div>
-                </FormField>
-              </div>
-            )}
-
-            {/* Step 4: Date Selection */}
-            {step === 4 && (
-              <div className="space-y-6">
-                <FormField
-                  label="Select Test Date"
-                  required
-                  helpText="Choose from available dates within the next three weeks"
-                >
-                  <div className="space-y-3 max-h-64 overflow-y-auto">
-                    {(formData.isRefugee ? refugeeDates : regularDates)
-                      .filter(dateObj => isDateVisible(dateObj.date))
-                      .map((dateObj) => {
-                        const availableSpots = getAvailableSpots(dateObj.date, formData.hasLaptop);
-                        const isAvailable = availableSpots > 0;
-                        
-                        return (
-                          <label 
-                            key={dateObj.date} 
-                            className={`flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-colors ${
-                              isAvailable 
-                                ? 'border-gray-200 hover:bg-gray-50' 
-                                : 'border-gray-100 bg-gray-50 cursor-not-allowed'
-                            }`}
-                          >
-                            <div className="flex items-center">
-                              <input
-                                type="radio"
-                                name="selectedDate"
-                                value={dateObj.date}
-                                checked={formData.selectedDate === dateObj.date}
-                                onChange={(e) => updateFormData('selectedDate', e.target.value)}
-                                disabled={!isAvailable}
-                                className="h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
-                                required
-                              />
-                              <div className="ml-3">
-                                <span className={`font-medium ${isAvailable ? 'text-gray-900' : 'text-gray-400'}`}>
-                                  {dateObj.date}
-                                </span>
-                                <p className="text-sm text-gray-500">10:00 AM - 1:00 PM</p>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <Badge 
-                                variant={isAvailable ? 'success' : 'secondary'}
-                                size="sm"
-                              >
-                                {isAvailable ? `${availableSpots} spots left` : 'Full'}
-                              </Badge>
-                            </div>
-                          </label>
-                        );
-                      })}
-                  </div>
-                </FormField>
-              </div>
-            )}
-
-            {/* Step 5: Confirmation */}
-            {step === 5 && (
-              <div className="space-y-6">
-                <Alert type="info" title="Please Review Your Information">
-                  Confirm all details are correct before submitting your registration.
-                </Alert>
-
-                <div className="bg-gray-50 p-6 rounded-lg space-y-4">
-                  <h3 className="font-semibold text-gray-900">Registration Summary</h3>
-                  
-                  <div className="grid gap-3 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Name:</span>
-                      <span className="font-medium">{formData.name}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Email:</span>
-                      <span className="font-medium">{formData.email}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Test Date:</span>
-                      <span className="font-medium">{formData.selectedDate}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Laptop:</span>
-                      <Badge variant={formData.hasLaptop ? 'success' : 'secondary'} size="sm">
-                        {formData.hasLaptop ? 'Bringing Own' : 'Using Provided'}
-                      </Badge>
-                    </div>
-                    {formData.isRefugee && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Status:</span>
-                        <Badge variant="info" size="sm">Refugee Applicant</Badge>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <FormField>
-                  <label className="flex items-start">
-                    <input
-                      type="checkbox"
+                    helpText="Enter your full name as it appears on your ID"
+                  >
+                    <Input
+                      type="text"
+                      placeholder="John Doe"
+                      value={formData.name}
+                      onChange={(e) => updateFormData('name', e.target.value)}
                       required
-                      className="h-4 w-4 text-indigo-600 border-gray-300 rounded mt-1"
-                      checked={formData.confirmedAttendance}
-                      onChange={(e) => updateFormData('confirmedAttendance', e.target.checked)}
+                      icon={
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                      }
                     />
-                    <span className="ml-3 text-sm text-gray-900">
-                      I confirm that I will attend the test in person on the selected date and understand 
-                      that missing the test may require rescheduling.
-                    </span>
-                  </label>
-                </FormField>
-              </div>
-            )}
+                  </FormField>
 
-            {/* Navigation Buttons */}
-            <div className="flex justify-between pt-6 border-t border-gray-200">
-              {step > 1 && (
+                  <FormField
+                    label="Email Address"
+                    required
+                    helpText="We'll send test updates and results to this email"
+                    error={formData.email && !validateEmail(formData.email) ? 'Please enter a valid email address' : ''}
+                  >
+                    <Input
+                      type="email"
+                      placeholder="john@example.com"
+                      value={formData.email}
+                      onChange={(e) => updateFormData('email', e.target.value)}
+                      required
+                      error={formData.email && !validateEmail(formData.email)}
+                      icon={
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                      }
+                    />
+                  </FormField>
+                </div>
+              )}
+
+              {/* Step 2: Laptop Question */}
+              {step === 2 && (
+                <div className="space-y-6">
+                  <FormField
+                    label="Will you bring your own laptop?"
+                    required
+                    helpText="We can provide a laptop if you don't have one, but bringing your own is preferred"
+                  >
+                    <div className="space-y-3">
+                      {[
+                        { value: true, label: 'Yes, I will bring my own laptop', icon: '💻' },
+                        { value: false, label: 'No, please provide a laptop for me', icon: '🏢' }
+                      ].map((option) => (
+                        <label key={option.value.toString()} className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="hasLaptop"
+                            value={option.value}
+                            checked={formData.hasLaptop === option.value}
+                            onChange={(e) => updateFormData('hasLaptop', e.target.value === 'true')}
+                            className="h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
+                            required
+                          />
+                          <span className="ml-3 text-2xl">{option.icon}</span>
+                          <span className="ml-3 text-gray-900">{option.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </FormField>
+                </div>
+              )}
+
+              {/* Step 3: Date Selection */}
+              {step === 3 && (
+                <div className="space-y-6">
+                  <FormField
+                    label="Select Test Date"
+                    required
+                    helpText="Choose from available dates within the next three weeks"
+                  >
+                    <div className="space-y-3 max-h-64 overflow-y-auto">
+                      {regularDates
+                        .filter(dateObj => isDateVisible(dateObj.date))
+                        .map((dateObj) => {
+                          const availableSpots = getAvailableSpots(dateObj.date, formData.hasLaptop);
+                          const isAvailable = availableSpots > 0;
+                          
+                          return (
+                            <label 
+                              key={dateObj.date} 
+                              className={`flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-colors ${
+                                isAvailable 
+                                  ? 'border-gray-200 hover:bg-gray-50' 
+                                  : 'border-gray-100 bg-gray-50 cursor-not-allowed'
+                              } ${
+                                formData.selectedDate === dateObj.date ? 'border-indigo-500 bg-indigo-50' : ''
+                              }`}
+                            >
+                              <div className="flex items-center">
+                                <input
+                                  type="radio"
+                                  name="selectedDate"
+                                  value={dateObj.date}
+                                  checked={formData.selectedDate === dateObj.date}
+                                  onChange={(e) => updateFormData('selectedDate', e.target.value)}
+                                  disabled={!isAvailable}
+                                  className="h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
+                                  required
+                                />
+                                <div className="ml-3">
+                                  <div className={`font-medium ${isAvailable ? 'text-gray-900' : 'text-gray-400'}`}>
+                                    {dateObj.date}
+                                  </div>
+                                  <div className="text-sm text-gray-500">
+                                    {dateObj.venues} venues available
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <Badge 
+                                  variant={isAvailable ? 'success' : 'secondary'} 
+                                  size="sm"
+                                >
+                                  {isAvailable ? `${availableSpots} spots left` : 'Full'}
+                                </Badge>
+                              </div>
+                            </label>
+                          );
+                        })}
+                    </div>
+                  </FormField>
+                </div>
+              )}
+
+              {/* Step 4: Confirmation */}
+              {step === 4 && (
+                <div className="space-y-6">
+                  <Alert type="info" title="Please Review Your Information">
+                    Confirm all details are correct before submitting your registration.
+                  </Alert>
+
+                  <div className="bg-gray-50 p-6 rounded-lg space-y-4">
+                    <h3 className="font-semibold text-gray-900">Registration Summary</h3>
+                    
+                    <div className="grid gap-3 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Name:</span>
+                        <span className="font-medium">{formData.name}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Email:</span>
+                        <span className="font-medium">{formData.email}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Test Date:</span>
+                        <span className="font-medium">{formData.selectedDate}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Laptop:</span>
+                        <Badge variant={formData.hasLaptop ? 'success' : 'secondary'} size="sm">
+                          {formData.hasLaptop ? 'Bringing Own' : 'Using Provided'}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+
+                  <FormField>
+                    <label className="flex items-start">
+                      <input
+                        type="checkbox"
+                        required
+                        className="h-4 w-4 text-indigo-600 border-gray-300 rounded mt-1"
+                        checked={formData.confirmedAttendance}
+                        onChange={(e) => updateFormData('confirmedAttendance', e.target.checked)}
+                      />
+                      <span className="ml-3 text-sm text-gray-900">
+                        I confirm that I will attend the test in person on the selected date and understand 
+                        that missing the test may require rescheduling.
+                      </span>
+                    </label>
+                  </FormField>
+                </div>
+              )}
+
+              {/* Navigation Buttons */}
+              <div className="flex justify-between pt-6">
                 <Button
                   type="button"
-                  onClick={() => setStep(step - 1)}
-                  variant="secondary"
-                  icon={
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                    </svg>
+                  variant="ghost"
+                  onClick={prevStep}
+                  disabled={step === 1}
+                  className={step === 1 ? 'invisible' : ''}
+                >
+                  Previous
+                </Button>
+
+                <LoadingButton
+                  type="submit"
+                  loading={isLoading}
+                  disabled={
+                    (step === 1 && (!formData.name || !formData.email || !validateEmail(formData.email))) ||
+                    (step === 2 && formData.hasLaptop === null) ||
+                    (step === 3 && !formData.selectedDate) ||
+                    (step === 4 && !formData.confirmedAttendance)
                   }
                 >
-                  Back
-                </Button>
-              )}
-              
-              <div className="ml-auto">
-                {step === 5 ? (
-                  <LoadingButton
-                    type="submit"
-                    isLoading={isLoading}
-                    loadingText="Submitting Registration..."
-                    variant="primary"
-                    size="lg"
-                    icon={
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    }
-                    iconPosition="right"
-                  >
-                    Complete Registration
-                  </LoadingButton>
-                ) : (
-                  <Button
-                    type="submit"
-                    variant="primary"
-                    icon={
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    }
-                    iconPosition="right"
-                  >
-                    Continue
-                  </Button>
-                )}
+                  {step === 4 ? 'Complete Registration' : 'Next'}
+                </LoadingButton>
               </div>
-            </div>
-          </form>
-        </Card>
+            </form>
+          </Card>
+        </div>
       </div>
     </div>
   );

@@ -163,3 +163,41 @@ export async function createBooking(bookingData) {
     throw error;
   }
 }
+
+export async function testConnection() {
+  try {
+    console.log('Starting connection test...');
+    const sheets = await getGoogleSheets();
+    
+    console.log('Attempting to fetch spreadsheet...', {
+      sheetId: process.env.GOOGLE_SHEET_ID
+    });
+
+    const metadata = await sheets.spreadsheets.get({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+    });
+
+    console.log('Connection successful!', {
+      spreadsheetTitle: metadata.data.properties.title,
+      sheetCount: metadata.data.sheets.length,
+      sheets: metadata.data.sheets.map(s => s.properties.title)
+    });
+
+    return {
+      success: true,
+      spreadsheetTitle: metadata.data.properties.title,
+      sheets: metadata.data.sheets.map(s => s.properties.title)
+    };
+  } catch (error) {
+    console.error('Connection test failed:', {
+      message: error.message,
+      details: error.response?.data || 'No additional details'
+    });
+    
+    return {
+      success: false,
+      error: error.message,
+      details: error.response?.data || 'No additional details'
+    };
+  }
+}

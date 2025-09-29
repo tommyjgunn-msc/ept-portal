@@ -84,9 +84,8 @@ export default function Booking() {
   };
 
   const isDateVisible = (date) => {
-    const parsedDate = parseTestDate(date);
-    return isFutureDate(parsedDate) && isWithinThreeWeeks(parsedDate);
-  };
+  return isFutureDate(date) && isWithinThreeWeeks(date);
+};
 
   const updateFormData = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));

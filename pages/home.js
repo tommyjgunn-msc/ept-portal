@@ -154,7 +154,7 @@ export default function Home() {
                     <Button 
                       size="lg" 
                       className="w-full"
-                      onClick={() => router.push('/test')}
+                      onClick={() => router.push('/test-portal')}
                     >
                       Start Test
                     </Button>

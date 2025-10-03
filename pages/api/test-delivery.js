@@ -2,6 +2,9 @@
 import { getGoogleSheets } from '../../utils/googleSheets';
 
 function convertDateFormat(bookingDate) {
+  // Strip any quotes first
+  const cleanDate = bookingDate.replace(/^'|'$/g, '');
+  
   // Convert "Friday, 03 October" to "2025-10-03"
   const monthMap = {
     'January': '01', 'February': '02', 'March': '03', 'April': '04',
@@ -9,7 +12,7 @@ function convertDateFormat(bookingDate) {
     'September': '09', 'October': '10', 'November': '11', 'December': '12'
   };
   
-  const parts = bookingDate.split(', ')[1].split(' '); // ["03", "October"]
+  const parts = cleanDate.split(', ')[1].split(' '); // ["03", "October"]
   const day = parts[0];
   const month = monthMap[parts[1]];
   const year = new Date().getFullYear();

@@ -1,12 +1,22 @@
 // pages/api/test-delivery.js
 import { getGoogleSheets } from '../../utils/googleSheets';
 
-/**
- * Delivers test content to students based on date, type, and student ID.
- * @param {Object} req - The HTTP request object.
- * @param {Object} res - The HTTP response object.
- * @returns {Object} - Test content or error message.
- */
+function convertDateFormat(bookingDate) {
+  // Convert "Friday, 03 October" to "2025-10-03"
+  const monthMap = {
+    'January': '01', 'February': '02', 'March': '03', 'April': '04',
+    'May': '05', 'June': '06', 'July': '07', 'August': '08',
+    'September': '09', 'October': '10', 'November': '11', 'December': '12'
+  };
+  
+  const parts = bookingDate.split(', ')[1].split(' '); // ["03", "October"]
+  const day = parts[0];
+  const month = monthMap[parts[1]];
+  const year = new Date().getFullYear();
+  
+  return `${year}-${month}-${day}`;
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({
@@ -16,7 +26,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { date, type, student_id } = req.query;
+    let { date, type, student_id } = req.query;
 
     if (!date || !type || !student_id) {
       return res.status(400).json({
@@ -31,6 +41,10 @@ export default async function handler(req, res) {
         message: 'Student ID must be alphanumeric'
       });
     }
+
+    // Convert date from booking format to Tests sheet format
+    const convertedDate = convertDateFormat(date);
+    console.log('Date conversion:', { original: date, converted: convertedDate });
 
     const sheets = await getGoogleSheets();
 
@@ -59,8 +73,17 @@ export default async function handler(req, res) {
       });
     }
 
-    const test = testResponse.values?.find(row => row[5] === date && row[1] === type);
+    const test = testResponse.values?.find(row => row[5] === convertedDate && row[1] === type);
+    
     if (!test) {
+      console.error('Test not found:', { 
+        searchDate: convertedDate, 
+        searchType: type,
+        availableTests: testResponse.values?.map(row => ({ 
+          date: row[5], 
+          type: row[1] 
+        })) 
+      });
       return res.status(404).json({ message: 'Test not found' });
     }
 

@@ -1,4 +1,4 @@
-// components/TestPortalComponent.js - NEW FILE (Client-side only)
+// components/TestPortalComponent.js - FIXED VERSION
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import { useTestMode } from '@/context/TestModeContext';
@@ -136,6 +136,97 @@ const useOptimizedTimer = (initialTime, onTimeUp, testType, timerSpeed = 1) => {
 
 // Reading Test Component
 const ReadingTest = ({ content, onAnswer, responses }) => {
+  const sections = useMemo(() => {
+    if (!content) return [];
+    
+    return content.reduce((sections, question) => {
+      const sectionIndex = parseInt(question[1]) - 1;
+      if (!sections[sectionIndex]) {
+        sections[sectionIndex] = {
+          title: question[2],
+          content: question[3],
+          questions: []
+        };
+      }
+      sections[sectionIndex].questions.push({
+        id: `${sectionIndex}-${sections[sectionIndex].questions.length}`,
+        number: question[4],
+        text: question[5],
+        options: question[6] ? JSON.parse(question[6]) : [],
+        points: parseInt(question[8]) || 0
+      });
+      return sections;
+    }, []);
+  }, [content]);
+
+  return (
+    <div className="space-y-8">
+      {sections.map((section, sIndex) => (
+        <div key={sIndex} className="bg-white shadow rounded-lg p-6 space-y-6">
+          <h2 className="text-xl font-bold">{section.title}</h2>
+          <div className="prose max-w-none mb-6">{section.content}</div>
+          
+          {section.questions.map((question) => (
+            <div key={question.id} className="border-t pt-4">
+              <p className="font-medium mb-4">{question.number}. {question.text}</p>
+              <div className="space-y-2">
+                {question.options.map((option, oIndex) => (
+                  <label key={oIndex} className="flex items-center space-x-3 p-2 rounded hover:bg-gray-50">
+                    <input
+                      type="radio"
+                      name={`q-${question.id}`}
+                      value={option}
+                      checked={responses?.[question.id] === option}
+                      onChange={() => onAnswer(question.id, option)}
+                      className="h-4 w-4 text-indigo-600"
+                    />
+                    <span>{option}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// Writing Test Component
+const WritingTest = ({ content, onAnswer, responses }) => {
+  if (!content || content.length === 0) return null;
+  
+  return (
+    <div className="space-y-8">
+      {content.map((prompt, index) => {
+        const promptId = `prompt-${index}`;
+        const wordCount = (responses?.[promptId] || '').split(/\s+/).filter(w => w.length > 0).length;
+        
+        return (
+          <div key={index} className="bg-white shadow rounded-lg p-6 space-y-4">
+            <h2 className="text-xl font-bold">{prompt[2]}</h2>
+            <div className="prose max-w-none mb-4 whitespace-pre-wrap">{prompt[3]}</div>
+            <div className="text-sm text-gray-600 mb-2">
+              Word limit: {prompt[4]} words
+            </div>
+            <textarea
+              className="w-full min-h-[300px] p-4 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-y"
+              placeholder="Type your response here..."
+              value={responses?.[promptId] || ''}
+              onChange={(e) => onAnswer(promptId, e.target.value)}
+            />
+            <div className="text-sm text-gray-500 text-right">
+              Word count: <span className={wordCount > parseInt(prompt[4]) ? 'text-red-600 font-bold' : ''}>{wordCount}</span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+// Listening Test Component
+const ListeningTest = ({ content, onAnswer, responses }) => {
   const sections = useMemo(() => {
     if (!content) return [];
     
@@ -488,7 +579,7 @@ export default function TestPortalComponent() {
                   <span className="text-red-600 block mt-2">
                     Warning: {submissionError}
                   </span>
-                ) : 'Please wait for the instructor before proceeding to the next test.'}
+                ) : ' Please wait for the instructor before proceeding to the next test.'}
               </p>
               
               <div className="flex justify-center space-x-4">
@@ -539,6 +630,22 @@ export default function TestPortalComponent() {
           <div className="px-4 py-6 sm:px-0">
             {TEST_SEQUENCE[currentTest] === 'reading' && (
               <ReadingTest 
+                content={testData.content}
+                onAnswer={handleAnswer}
+                responses={responses}
+              />
+            )}
+            
+            {TEST_SEQUENCE[currentTest] === 'writing' && (
+              <WritingTest 
+                content={testData.content}
+                onAnswer={handleAnswer}
+                responses={responses}
+              />
+            )}
+            
+            {TEST_SEQUENCE[currentTest] === 'listening' && (
+              <ListeningTest 
                 content={testData.content}
                 onAnswer={handleAnswer}
                 responses={responses}

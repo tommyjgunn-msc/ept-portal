@@ -1,4 +1,4 @@
-// pages/api/booking.js
+// pages/api/booking.js - WITH CAPACITY VALIDATION
 import { createBooking, getAvailableDates } from '../../utils/googleSheets'; 
 
 export default async function handler(req, res) {
@@ -36,13 +36,15 @@ export default async function handler(req, res) {
       });
     }
 
-    // CAPACITY VALIDATION - Check booking limits
+    // ========== CAPACITY VALIDATION - THIS WAS MISSING ==========
     console.log('Checking capacity limits for date:', bookingData.selectedDate);
+    
     const currentBookings = await getAvailableDates();
     const dateBookings = currentBookings[bookingData.selectedDate] || { withLaptop: 0, withoutLaptop: 0 };
     const totalBookings = dateBookings.withLaptop + dateBookings.withoutLaptop;
     
     console.log('Current bookings for date:', {
+      date: bookingData.selectedDate,
       withLaptop: dateBookings.withLaptop,
       withoutLaptop: dateBookings.withoutLaptop,
       total: totalBookings
@@ -50,7 +52,7 @@ export default async function handler(req, res) {
     
     // Check total capacity (100 max per day)
     if (totalBookings >= 100) {
-      console.log('Date is fully booked');
+      console.log('REJECTED: Date is fully booked');
       return res.status(400).json({ 
         message: 'This date is fully booked. Please select another date.' 
       });
@@ -58,13 +60,16 @@ export default async function handler(req, res) {
     
     // Check no-laptop capacity (30 max per day)
     if (!bookingData.hasLaptop && dateBookings.withoutLaptop >= 30) {
-      console.log('No laptop spots are full');
+      console.log('REJECTED: No laptop spots are full');
       return res.status(400).json({ 
         message: 'No more spaces available for students without laptops on this date. Please bring your own laptop or select another date.' 
       });
     }
+    
+    console.log('Capacity validation PASSED');
+    // ========== END CAPACITY VALIDATION ==========
 
-    console.log('Capacity validation passed, creating booking...');
+    console.log('Creating booking...');
     const result = await createBooking(bookingData);
     console.log('Booking created:', result);
 

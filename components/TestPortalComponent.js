@@ -73,6 +73,8 @@ const useOptimizedTimer = (initialTime, onTimeUp, testType, timerSpeed = 1) => {
   
   const intervalRef = useRef(null);
   const lastUpdateRef = useRef(Date.now());
+  const timerWarningRef = useRef(false);
+  const isAutoSubmittingRef = useRef(false);
   const { debouncedSaveTime } = useOptimizedStorage();
 
   useEffect(() => {
@@ -80,6 +82,8 @@ const useOptimizedTimer = (initialTime, onTimeUp, testType, timerSpeed = 1) => {
     
     setTimeRemaining(initialTime);
     lastUpdateRef.current = Date.now();
+    timerWarningRef.current = false;
+    isAutoSubmittingRef.current = false;
     
     const warningTime = 5 * 60 * 1000;
     
@@ -91,14 +95,15 @@ const useOptimizedTimer = (initialTime, onTimeUp, testType, timerSpeed = 1) => {
       setTimeRemaining(prev => {
         const newTime = Math.max(0, prev - (delta * timerSpeed));
         
-        // Debounced storage save
         debouncedSaveTime(testType, newTime);
         
-        if (newTime <= warningTime && !timerWarning) {
+        if (newTime <= warningTime && !timerWarningRef.current) {
+          timerWarningRef.current = true;
           setTimerWarning(true);
         }
         
-        if (newTime <= 30000 && !isAutoSubmitting) {
+        if (newTime <= 30000 && !isAutoSubmittingRef.current) {
+          isAutoSubmittingRef.current = true;
           setIsAutoSubmitting(true);
           onTimeUp?.();
         }
@@ -112,9 +117,8 @@ const useOptimizedTimer = (initialTime, onTimeUp, testType, timerSpeed = 1) => {
         clearInterval(intervalRef.current);
       }
     };
-  }, [initialTime, timerSpeed, testType, timerWarning, isAutoSubmitting, debouncedSaveTime, onTimeUp]);
+  }, [initialTime, timerSpeed, testType, debouncedSaveTime, onTimeUp]); // REMOVED timerWarning and isAutoSubmitting
 
-  // Handle visibility change for performance
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {

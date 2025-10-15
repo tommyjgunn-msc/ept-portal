@@ -1,5 +1,5 @@
 // pages/api/booking.js
-import { createBooking } from '../../utils/googleSheets'; 
+import { createBooking, getAvailableDates } from '../../utils/googleSheets'; 
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -36,7 +36,35 @@ export default async function handler(req, res) {
       });
     }
 
-    console.log('All validation passed, creating booking...');
+    // CAPACITY VALIDATION - Check booking limits
+    console.log('Checking capacity limits for date:', bookingData.selectedDate);
+    const currentBookings = await getAvailableDates();
+    const dateBookings = currentBookings[bookingData.selectedDate] || { withLaptop: 0, withoutLaptop: 0 };
+    const totalBookings = dateBookings.withLaptop + dateBookings.withoutLaptop;
+    
+    console.log('Current bookings for date:', {
+      withLaptop: dateBookings.withLaptop,
+      withoutLaptop: dateBookings.withoutLaptop,
+      total: totalBookings
+    });
+    
+    // Check total capacity (100 max per day)
+    if (totalBookings >= 100) {
+      console.log('Date is fully booked');
+      return res.status(400).json({ 
+        message: 'This date is fully booked. Please select another date.' 
+      });
+    }
+    
+    // Check no-laptop capacity (30 max per day)
+    if (!bookingData.hasLaptop && dateBookings.withoutLaptop >= 30) {
+      console.log('No laptop spots are full');
+      return res.status(400).json({ 
+        message: 'No more spaces available for students without laptops on this date. Please bring your own laptop or select another date.' 
+      });
+    }
+
+    console.log('Capacity validation passed, creating booking...');
     const result = await createBooking(bookingData);
     console.log('Booking created:', result);
 

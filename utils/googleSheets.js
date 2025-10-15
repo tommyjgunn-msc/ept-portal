@@ -106,8 +106,6 @@ export async function verifyEptId(eptId) {
 
 export async function getAvailableDates() {
   try {
-    console.log('Fetching available dates...');
-    
     const sheets = await getGoogleSheets();
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
@@ -115,21 +113,21 @@ export async function getAvailableDates() {
     });
 
     const bookings = response.data.values || [];
-    console.log('Current bookings count:', bookings.length);
-
     const dateStats = bookings.reduce((acc, [,,, hasLaptop, date]) => {
-      if (!acc[date]) {
-        acc[date] = { withLaptop: 0, withoutLaptop: 0 };
+      const cleanDate = date ? date.replace(/^'|'$/g, '').trim() : '';
+      if (!cleanDate) return acc;
+      
+      if (!acc[cleanDate]) {
+        acc[cleanDate] = { withLaptop: 0, withoutLaptop: 0 };
       }
       if (hasLaptop === 'Yes') {
-        acc[date].withLaptop++;
+        acc[cleanDate].withLaptop++;
       } else {
-        acc[date].withoutLaptop++;
+        acc[cleanDate].withoutLaptop++;
       }
       return acc;
     }, {});
 
-    console.log('Date statistics:', dateStats);
     return dateStats;
   } catch (error) {
     console.error('Error in getAvailableDates:', error);
@@ -177,8 +175,6 @@ export async function createBooking(bookingData) {
 
 export async function getBookingsCount() {
   try {
-    console.log('Fetching bookings count...');
-    
     const sheets = await getGoogleSheets();
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
@@ -186,21 +182,21 @@ export async function getBookingsCount() {
     });
 
     const bookings = response.data.values || [];
-    console.log('Current bookings count:', bookings.length);
-
     const dateStats = bookings.reduce((acc, [,,, hasLaptop, date]) => {
-      if (!acc[date]) {
-        acc[date] = { withLaptop: 0, withoutLaptop: 0 };
+      const cleanDate = date ? date.replace(/^'|'$/g, '').trim() : '';
+      if (!cleanDate) return acc;
+      
+      if (!acc[cleanDate]) {
+        acc[cleanDate] = { withLaptop: 0, withoutLaptop: 0 };
       }
       if (hasLaptop === 'Yes') {
-        acc[date].withLaptop++;
+        acc[cleanDate].withLaptop++;
       } else {
-        acc[date].withoutLaptop++;
+        acc[cleanDate].withoutLaptop++;
       }
       return acc;
     }, {});
 
-    console.log('Date statistics:', dateStats);
     return dateStats;
   } catch (error) {
     console.error('Error in getBookingsCount:', error);

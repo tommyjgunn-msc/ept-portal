@@ -74,14 +74,24 @@ export default function Booking() {
   }, []);
 
   const getAvailableSpots = (date, hasLaptop) => {
-    const dateConfig = regularDates.find(d => d.date === date);
-    if (!dateConfig) return 0;
+  const dateConfig = regularDates.find(d => d.date === date);
+  if (!dateConfig) return 0;
 
-    const booked = dateCapacity[date] || { withLaptop: 0, withoutLaptop: 0 };
-    return hasLaptop
-      ? dateConfig.capacity.withLaptop - booked.withLaptop
-      : dateConfig.capacity.withoutLaptop - booked.withoutLaptop;
-  };
+  const booked = dateCapacity[date] || { withLaptop: 0, withoutLaptop: 0 };
+  const totalBooked = booked.withLaptop + booked.withoutLaptop;
+  
+  // If total capacity reached, no spots available
+  if (totalBooked >= 100) return 0;
+  
+  // Check category-specific limits
+  const categorySpots = hasLaptop
+    ? dateConfig.capacity.withLaptop - booked.withLaptop
+    : dateConfig.capacity.withoutLaptop - booked.withoutLaptop;
+  
+  // Return the smaller of: remaining total capacity OR category capacity
+  const remainingTotal = 100 - totalBooked;
+  return Math.max(0, Math.min(categorySpots, remainingTotal));
+};
 
   const isDateVisible = (date) => {
   return isFutureDate(date) && isWithinThreeWeeks(date);

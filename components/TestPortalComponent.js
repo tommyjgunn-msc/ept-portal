@@ -304,10 +304,15 @@ export default function TestPortalComponent() {
   const [submissionError, setSubmissionError] = useState('');
   const [shouldSubmit, setShouldSubmit] = useState(false);
   
-  // Optimized timer
+// Create stable callback reference
+  const handleTimeUp = useCallback(() => {
+    setShouldSubmit(true);
+  }, []);
+
+// Optimized timer
   const { timeRemaining, timerWarning, isAutoSubmitting, setTimeRemaining } = useOptimizedTimer(
     testData ? TEST_TIME[TEST_SEQUENCE[currentTest]] : null,
-    () => setShouldSubmit(true),
+    handleTimeUp,  // CHANGE THIS LINE - was: () => setShouldSubmit(true)
     TEST_SEQUENCE[currentTest],
     getTimerSpeed()
   );

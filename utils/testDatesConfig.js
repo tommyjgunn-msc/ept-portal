@@ -21,7 +21,7 @@ export const regularDates = [
     { date: 'Friday, 13 March', venues: 4, capacity: { withLaptop: 70, withoutLaptop: 30 } },
     { date: 'Friday, 20 March', venues: 4, capacity: { withLaptop: 70, withoutLaptop: 30 } },
     { date: 'Friday, 27 March', venues: 4, capacity: { withLaptop: 70, withoutLaptop: 30 } },
-    { date: 'Friday, 03 April', venues: 4, capacity: { withLaptop: 70, withoutLaptop: 30 } },
+    { date: 'Wednesday, 01 April', venues: 4, capacity: { withLaptop: 70, withoutLaptop: 30 } },
     { date: 'Friday, 17 April', venues: 4, capacity: { withLaptop: 70, withoutLaptop: 30 } },
     { date: 'Friday, 24 April', venues: 4, capacity: { withLaptop: 70, withoutLaptop: 30 } },
     { date: 'Tueday, 28 April', venues: 4, capacity: { withLaptop: 70, withoutLaptop: 30 } },

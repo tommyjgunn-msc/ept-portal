@@ -43,9 +43,9 @@ export default function TestComplete() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center">
         <Card className="p-8 text-center">
-          <div className="w-12 h-12 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <div className="w-12 h-12 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-gray-600 font-medium">Loading your results...</p>
         </Card>
       </div>
@@ -103,7 +103,7 @@ export default function TestComplete() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 py-12 px-4">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
@@ -129,7 +129,7 @@ export default function TestComplete() {
         <div className="mb-8">
           <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
             <div
-              className="h-2 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full transition-all duration-700"
+              className="h-2 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full transition-all duration-700"
               style={{ width: `${(completedCount / testTypes.length) * 100}%` }}
             />
           </div>
@@ -170,7 +170,7 @@ export default function TestComplete() {
                   <div className="mt-4 pt-3 border-t border-gray-100">
                     <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
                       <div
-                        className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full h-2 transition-all duration-700"
+                        className="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full h-2 transition-all duration-700"
                         style={{ width: `${testData.total_points > 0 ? (testData.score / testData.total_points) * 100 : 0}%` }}
                       />
                     </div>

@@ -49,7 +49,7 @@ export default function RegistrationComplete() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-indigo-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-emerald-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-2xl mx-auto">
         {/* Success Animation Container */}
         <div className="text-center mb-8">
@@ -84,16 +84,16 @@ export default function RegistrationComplete() {
               Your Test is Scheduled
             </h2>
             
-            <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-6 mb-6">
+            <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl p-6 mb-6">
               <div className="flex items-center justify-center mb-4">
-                <svg className="w-8 h-8 text-indigo-600 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-8 h-8 text-emerald-600 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3a4 4 0 118 0v4m-4 8a3 3 0 100-6 3 3 0 000 6z" />
                 </svg>
                 <p className="text-lg text-gray-700">Test Date & Time</p>
               </div>
               
               <div className="text-center">
-                <p className="text-3xl font-bold text-indigo-600 mb-2">
+                <p className="text-3xl font-bold text-emerald-600 mb-2">
                   {bookingDetails.selectedDate}
                 </p>
                 <Badge variant="primary" size="lg">
@@ -192,8 +192,8 @@ export default function RegistrationComplete() {
           
           <div className="space-y-4">
             <div className="flex items-start">
-              <div className="flex-shrink-0 w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center mr-3">
-                <span className="text-sm font-semibold text-indigo-600">1</span>
+              <div className="flex-shrink-0 w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center mr-3">
+                <span className="text-sm font-semibold text-emerald-600">1</span>
               </div>
               <div>
                 <h4 className="font-medium text-gray-900">Confirmation Email</h4>
@@ -202,8 +202,8 @@ export default function RegistrationComplete() {
             </div>
             
             <div className="flex items-start">
-              <div className="flex-shrink-0 w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center mr-3">
-                <span className="text-sm font-semibold text-indigo-600">2</span>
+              <div className="flex-shrink-0 w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center mr-3">
+                <span className="text-sm font-semibold text-emerald-600">2</span>
               </div>
               <div>
                 <h4 className="font-medium text-gray-900">Test Day Access</h4>
@@ -212,8 +212,8 @@ export default function RegistrationComplete() {
             </div>
             
             <div className="flex items-start">
-              <div className="flex-shrink-0 w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center mr-3">
-                <span className="text-sm font-semibold text-indigo-600">3</span>
+              <div className="flex-shrink-0 w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center mr-3">
+                <span className="text-sm font-semibold text-emerald-600">3</span>
               </div>
               <div>
                 <h4 className="font-medium text-gray-900">Results</h4>

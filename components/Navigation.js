@@ -177,7 +177,7 @@ export default function Navigation() {
                 </svg>
               </div>
               <span className="text-xl font-bold text-gray-900 group-hover:text-emerald-700 transition-colors">
-                EPT Portal
+                English Proficiency Test
               </span>
             </Link>
 

@@ -126,7 +126,7 @@ export default function Booking() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-cyan-50 flex items-center justify-center p-4">
         <Card className="w-full max-w-md p-8 text-center">
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -143,7 +143,7 @@ export default function Booking() {
   const steps = ['Personal Info', 'Laptop Setup', 'Select Date', 'Confirm'];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-cyan-50">
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-2xl mx-auto">
           <Card className="p-8">
@@ -159,7 +159,7 @@ export default function Booking() {
                   <div key={index} className="flex items-center">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all ${
                       step > index + 1 ? 'bg-green-500 text-white' :
-                      step === index + 1 ? 'bg-indigo-600 text-white shadow-md' :
+                      step === index + 1 ? 'bg-emerald-600 text-white shadow-md' :
                       'bg-gray-200 text-gray-500'
                     }`}>
                       {step > index + 1 ? (
@@ -181,7 +181,7 @@ export default function Booking() {
               <div className="flex justify-between text-xs sm:text-sm">
                 {steps.map((title, index) => (
                   <span key={index} className={`${
-                    step === index + 1 ? 'text-indigo-600 font-semibold' :
+                    step === index + 1 ? 'text-emerald-600 font-semibold' :
                     step > index + 1 ? 'text-green-600' : 'text-gray-400'
                   }`}>
                     {title}
@@ -242,7 +242,7 @@ export default function Booking() {
                           key={option.value.toString()}
                           className={`flex flex-col items-center p-5 border-2 rounded-xl cursor-pointer transition-all ${
                             formData.hasLaptop === option.value
-                              ? 'border-indigo-500 bg-indigo-50 shadow-sm'
+                              ? 'border-emerald-500 bg-emerald-50 shadow-sm'
                               : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                           }`}
                         >
@@ -275,13 +275,13 @@ export default function Booking() {
                               key={dateObj.date}
                               className={`block p-4 border-2 rounded-xl cursor-pointer transition-all ${
                                 !isAvailable ? 'border-gray-100 bg-gray-50 opacity-60 cursor-not-allowed' :
-                                formData.selectedDate === dateObj.date ? 'border-indigo-500 bg-indigo-50 shadow-sm' :
+                                formData.selectedDate === dateObj.date ? 'border-emerald-500 bg-emerald-50 shadow-sm' :
                                 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                               }`}
                             >
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center">
-                                  <input type="radio" name="selectedDate" value={dateObj.date} checked={formData.selectedDate === dateObj.date} onChange={() => updateFormData('selectedDate', dateObj.date)} disabled={!isAvailable} className="h-4 w-4 text-indigo-600 border-gray-300" required />
+                                  <input type="radio" name="selectedDate" value={dateObj.date} checked={formData.selectedDate === dateObj.date} onChange={() => updateFormData('selectedDate', dateObj.date)} disabled={!isAvailable} className="h-4 w-4 text-emerald-600 border-gray-300" required />
                                   <div className="ml-3">
                                     <div className={`font-medium ${isAvailable ? 'text-gray-900' : 'text-gray-400'}`}>{dateObj.date}</div>
                                     <div className="text-xs text-gray-500">{dateObj.venues} venues</div>
@@ -339,7 +339,7 @@ export default function Booking() {
                   </div>
                   <FormField>
                     <label className="flex items-start">
-                      <input type="checkbox" required className="h-4 w-4 text-indigo-600 border-gray-300 rounded mt-1" checked={formData.confirmedAttendance} onChange={(e) => updateFormData('confirmedAttendance', e.target.checked)} />
+                      <input type="checkbox" required className="h-4 w-4 text-emerald-600 border-gray-300 rounded mt-1" checked={formData.confirmedAttendance} onChange={(e) => updateFormData('confirmedAttendance', e.target.checked)} />
                       <span className="ml-3 text-sm text-gray-900">
                         I confirm I will attend the test in person on the selected date and understand that missing the test may require rescheduling.
                       </span>

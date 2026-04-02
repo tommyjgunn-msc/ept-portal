@@ -158,7 +158,7 @@ const MultipleChoiceTest = ({ content, onAnswer, responses, testType }) => {
         </div>
         <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
           <div
-            className="h-2 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full transition-all duration-500"
+            className="h-2 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full transition-all duration-500"
             style={{ width: `${totalQuestions > 0 ? (answeredCount / totalQuestions) * 100 : 0}%` }}
           />
         </div>
@@ -175,7 +175,7 @@ const MultipleChoiceTest = ({ content, onAnswer, responses, testType }) => {
               {section.questions.map((question) => (
                 <div key={question.id} className="border-t border-gray-100 pt-5">
                   <p className="font-medium text-gray-900 mb-3">
-                    <span className="text-indigo-600 mr-1">{question.number}.</span>
+                    <span className="text-emerald-600 mr-1">{question.number}.</span>
                     {question.text}
                   </p>
                   <div className="space-y-2 ml-1">
@@ -184,7 +184,7 @@ const MultipleChoiceTest = ({ content, onAnswer, responses, testType }) => {
                         key={oIndex}
                         className={`flex items-center space-x-3 p-3 rounded-lg border cursor-pointer transition-all duration-200 ${
                           responses?.[question.id] === option
-                            ? 'border-indigo-300 bg-indigo-50 shadow-sm'
+                            ? 'border-emerald-300 bg-emerald-50 shadow-sm'
                             : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                         }`}
                       >
@@ -194,7 +194,7 @@ const MultipleChoiceTest = ({ content, onAnswer, responses, testType }) => {
                           value={option}
                           checked={responses?.[question.id] === option}
                           onChange={() => onAnswer(question.id, option)}
-                          className="h-4 w-4 text-indigo-600 border-gray-300"
+                          className="h-4 w-4 text-emerald-600 border-gray-300"
                         />
                         <span className="text-sm text-gray-700">{option}</span>
                       </label>

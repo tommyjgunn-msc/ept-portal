@@ -17,7 +17,7 @@ const TEST_INFO = {
       'Pay attention to specific details and main ideas',
       'Manage your time — don\'t spend too long on a single question',
     ],
-    color: 'indigo',
+    color: 'emerald',
   },
   writing: {
     title: 'Writing',
@@ -55,7 +55,7 @@ const TEST_INFO = {
 };
 
 const COLORS = {
-  indigo: { bg: 'bg-indigo-50', icon: 'text-indigo-600', border: 'border-indigo-200', badge: 'bg-indigo-100 text-indigo-700' },
+  emerald: { bg: 'bg-emerald-50', icon: 'text-emerald-600', border: 'border-emerald-200', badge: 'bg-emerald-100 text-emerald-700' },
   emerald: { bg: 'bg-emerald-50', icon: 'text-emerald-600', border: 'border-emerald-200', badge: 'bg-emerald-100 text-emerald-700' },
   amber: { bg: 'bg-amber-50', icon: 'text-amber-600', border: 'border-amber-200', badge: 'bg-amber-100 text-amber-700' },
 };

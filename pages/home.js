@@ -7,9 +7,9 @@ import { useToast } from '../components/ToastContext';
 function StatCard({ icon, label, value, color = 'emerald' }) {
   const colors = {
     emerald: 'bg-emerald-50 text-emerald-600',
-    indigo: 'bg-indigo-50 text-indigo-600',
+    sky: 'bg-sky-50 text-sky-600',
     amber: 'bg-amber-50 text-amber-600',
-    purple: 'bg-purple-50 text-purple-600',
+    teal: 'bg-teal-50 text-teal-600',
   };
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-5 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow">
@@ -120,7 +120,7 @@ export default function Home() {
       ),
       duration: '30 min',
       description: 'Audio-based comprehension with questions',
-      color: 'bg-purple-50 text-purple-600 border-purple-100',
+      color: 'bg-teal-50 text-teal-600 border-teal-100',
     },
   ];
 
@@ -151,7 +151,7 @@ export default function Home() {
             value={userData.eptId}
           />
           <StatCard
-            color="indigo"
+            color="sky"
             icon={<svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>}
             label="Test Date"
             value={bookingDetails?.selectedDate || 'Not booked'}
@@ -163,7 +163,7 @@ export default function Home() {
             value="3 Total"
           />
           <StatCard
-            color="purple"
+            color="teal"
             icon={<svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
             label="Status"
             value={hasCompletedTests ? 'Completed' : bookingDetails ? 'Registered' : 'Pending'}

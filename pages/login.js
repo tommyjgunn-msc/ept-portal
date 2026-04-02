@@ -33,60 +33,61 @@ function CampusIllustration() {
 
       {/* ══════ BUILDING ══════ */}
       {/* Main facade */}
-      <rect x="145" y="165" width="230" height="175" rx="4" fill="#065F46" />
+      <rect x="150" y="168" width="220" height="180" rx="3" fill="#065F46" />
 
-      {/* Pediment (triangular top) */}
-      <polygon points="260,100 135,168 385,168" fill="#047857" />
-      {/* Pediment inner line */}
-      <polygon points="260,118 165,168 355,168" fill="#065F46" opacity="0.4" />
+      {/* Pediment (triangular roof) */}
+      <polygon points="260,98 130,170 390,170" fill="#047857" />
+      <polygon points="260,116 160,170 360,170" fill="#065F46" opacity="0.35" />
 
-      {/* Entablature / header band */}
-      <rect x="145" y="165" width="230" height="14" rx="2" fill="#047857" />
-      <rect x="145" y="175" width="230" height="4" fill="#034E3B" opacity="0.3" />
+      {/* Entablature band */}
+      <rect x="150" y="168" width="220" height="12" rx="1" fill="#047857" />
+      <rect x="150" y="177" width="220" height="3" fill="#034E3B" opacity="0.25" />
 
-      {/* Columns — 4 evenly spaced */}
-      {[186, 226, 274, 314].map((x) => (
+      {/* Columns — 4 evenly spaced, reaching from entablature to base */}
+      {[188, 228, 272, 312].map((x) => (
         <g key={x}>
-          {/* Column shaft */}
-          <rect x={x} y="185" width="14" height="110" rx="3" fill="#ECFDF5" />
-          {/* Column capital (top) */}
-          <rect x={x - 2} y="183" width="18" height="6" rx="2" fill="#D1FAE5" />
-          {/* Column base */}
-          <rect x={x - 2} y="293" width="18" height="6" rx="2" fill="#D1FAE5" />
+          <rect x={x - 2} y="181" width="18" height="6" rx="2" fill="#D1FAE5" />
+          <rect x={x} y="187" width="14" height="153" rx="3" fill="#ECFDF5" />
+          <rect x={x - 2} y="340" width="18" height="6" rx="2" fill="#D1FAE5" />
         </g>
       ))}
 
-      {/* Central doorway */}
-      <rect x="240" y="260" width="40" height="80" rx="20" fill="#10B981" />
-      <rect x="246" y="266" width="28" height="74" rx="14" fill="#059669" />
-      <circle cx="268" cy="305" r="3" fill="#D1FAE5" />
+      {/* Central doorway — smaller, proportional */}
+      <rect x="244" y="296" width="32" height="52" rx="16" fill="#10B981" />
+      <rect x="249" y="301" width="22" height="47" rx="11" fill="#059669" />
+      <circle cx="265" cy="325" r="2.5" fill="#D1FAE5" />
 
-      {/* Windows — left pair */}
-      <rect x="162" y="208" width="22" height="28" rx="4" fill="#A7F3D0" />
-      <rect x="162" y="248" width="22" height="28" rx="4" fill="#A7F3D0" />
-      {/* Window panes */}
-      <line x1="173" y1="208" x2="173" y2="236" stroke="#065F46" strokeWidth="1.5" opacity="0.3" />
-      <line x1="162" y1="222" x2="184" y2="222" stroke="#065F46" strokeWidth="1.5" opacity="0.3" />
-      <line x1="173" y1="248" x2="173" y2="276" stroke="#065F46" strokeWidth="1.5" opacity="0.3" />
-      <line x1="162" y1="262" x2="184" y2="262" stroke="#065F46" strokeWidth="1.5" opacity="0.3" />
+      {/* Windows — left side, two rows */}
+      <rect x="160" y="200" width="20" height="24" rx="3" fill="#A7F3D0" />
+      <rect x="160" y="240" width="20" height="24" rx="3" fill="#A7F3D0" />
+      <line x1="170" y1="200" x2="170" y2="224" stroke="#065F46" strokeWidth="1.2" opacity="0.3" />
+      <line x1="160" y1="212" x2="180" y2="212" stroke="#065F46" strokeWidth="1.2" opacity="0.3" />
+      <line x1="170" y1="240" x2="170" y2="264" stroke="#065F46" strokeWidth="1.2" opacity="0.3" />
+      <line x1="160" y1="252" x2="180" y2="252" stroke="#065F46" strokeWidth="1.2" opacity="0.3" />
 
-      {/* Windows — right pair */}
-      <rect x="336" y="208" width="22" height="28" rx="4" fill="#A7F3D0" />
-      <rect x="336" y="248" width="22" height="28" rx="4" fill="#A7F3D0" />
-      <line x1="347" y1="208" x2="347" y2="236" stroke="#065F46" strokeWidth="1.5" opacity="0.3" />
-      <line x1="336" y1="222" x2="358" y2="222" stroke="#065F46" strokeWidth="1.5" opacity="0.3" />
-      <line x1="347" y1="248" x2="347" y2="276" stroke="#065F46" strokeWidth="1.5" opacity="0.3" />
-      <line x1="336" y1="262" x2="358" y2="262" stroke="#065F46" strokeWidth="1.5" opacity="0.3" />
+      {/* Windows — right side, two rows */}
+      <rect x="340" y="200" width="20" height="24" rx="3" fill="#A7F3D0" />
+      <rect x="340" y="240" width="20" height="24" rx="3" fill="#A7F3D0" />
+      <line x1="350" y1="200" x2="350" y2="224" stroke="#065F46" strokeWidth="1.2" opacity="0.3" />
+      <line x1="340" y1="212" x2="360" y2="212" stroke="#065F46" strokeWidth="1.2" opacity="0.3" />
+      <line x1="350" y1="240" x2="350" y2="264" stroke="#065F46" strokeWidth="1.2" opacity="0.3" />
+      <line x1="340" y1="252" x2="360" y2="252" stroke="#065F46" strokeWidth="1.2" opacity="0.3" />
 
-      {/* Pediment clock / emblem */}
-      <circle cx="260" cy="138" r="12" fill="#ECFDF5" />
-      <circle cx="260" cy="138" r="9" fill="none" stroke="#047857" strokeWidth="1.5" />
-      <line x1="260" y1="132" x2="260" y2="138" stroke="#047857" strokeWidth="1.5" />
-      <line x1="260" y1="138" x2="264" y2="142" stroke="#047857" strokeWidth="1.5" />
+      {/* Windows — inner pair flanking door */}
+      <rect x="204" y="240" width="18" height="22" rx="3" fill="#A7F3D0" />
+      <rect x="298" y="240" width="18" height="22" rx="3" fill="#A7F3D0" />
+      <line x1="213" y1="240" x2="213" y2="262" stroke="#065F46" strokeWidth="1" opacity="0.25" />
+      <line x1="307" y1="240" x2="307" y2="262" stroke="#065F46" strokeWidth="1" opacity="0.25" />
+
+      {/* Pediment clock */}
+      <circle cx="260" cy="138" r="13" fill="#ECFDF5" />
+      <circle cx="260" cy="138" r="10" fill="none" stroke="#047857" strokeWidth="1.5" />
+      <line x1="260" y1="131" x2="260" y2="138" stroke="#047857" strokeWidth="1.5" strokeLinecap="round" />
+      <line x1="260" y1="138" x2="265" y2="142" stroke="#047857" strokeWidth="1.5" strokeLinecap="round" />
 
       {/* Steps */}
-      <rect x="215" y="340" width="90" height="8" rx="2" fill="#A7F3D0" />
-      <rect x="225" y="334" width="70" height="8" rx="2" fill="#D1FAE5" />
+      <rect x="220" y="348" width="80" height="7" rx="2" fill="#A7F3D0" />
+      <rect x="230" y="342" width="60" height="7" rx="2" fill="#D1FAE5" />
 
       {/* ══════ STUDENT 1 — left, walking with book ══════ */}
       <g transform="translate(105, 268)">
@@ -122,15 +123,15 @@ function CampusIllustration() {
         <rect x="-9" y="56" width="8" height="36" rx="4" fill="#374151" />
         <rect x="2" y="56" width="8" height="36" rx="4" fill="#374151" />
         {/* Body */}
-        <rect x="-12" y="18" width="24" height="42" rx="8" fill="#7C3AED" />
+        <rect x="-12" y="18" width="24" height="42" rx="8" fill="#0D9488" />
         {/* Arms */}
-        <rect x="-18" y="24" width="8" height="28" rx="4" fill="#6D28D9" />
-        <rect x="10" y="24" width="8" height="28" rx="4" fill="#6D28D9" />
+        <rect x="-18" y="24" width="8" height="28" rx="4" fill="#0F766E" />
+        <rect x="10" y="24" width="8" height="28" rx="4" fill="#0F766E" />
         {/* Laptop */}
         <rect x="-16" y="38" width="22" height="14" rx="2" fill="#4B5563" />
         <rect x="-14" y="40" width="18" height="9" rx="1" fill="#60A5FA" />
         {/* Head */}
-        <circle cx="0" cy="6" r="16" fill="#A78BFA" />
+        <circle cx="0" cy="6" r="16" fill="#5EEAD4" />
         {/* Hair */}
         <ellipse cx="0" cy="-4" rx="14" ry="9" fill="#1C1917" />
         {/* Face */}
@@ -205,7 +206,7 @@ function CampusIllustration() {
 
       {/* Small dots decoration */}
       <circle cx="490" cy="260" r="3" fill="#34D399" opacity="0.4" />
-      <circle cx="480" cy="278" r="2" fill="#A78BFA" opacity="0.4" />
+      <circle cx="480" cy="278" r="2" fill="#5EEAD4" opacity="0.4" />
       <circle cx="30" cy="270" r="3" fill="#F97316" opacity="0.3" />
       <circle cx="20" cy="290" r="2" fill="#FBBF24" opacity="0.3" />
     </svg>

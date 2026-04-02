@@ -33,7 +33,7 @@ export default function SectionTransition({ completedSection, onContinue, isLast
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center p-4">
       <div className="max-w-md w-full text-center">
         {/* Success icon */}
         <div className="relative inline-block mb-6">

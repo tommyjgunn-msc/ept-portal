@@ -108,7 +108,7 @@ export default function EnhancedWritingArea({ value = '', onChange, wordLimit, p
   };
 
   return (
-    <div className={`relative transition-all duration-500 ${isFocused ? 'ring-2 ring-indigo-200' : ''} rounded-xl overflow-hidden`}>
+    <div className={`relative transition-all duration-500 ${isFocused ? 'ring-2 ring-emerald-200' : ''} rounded-xl overflow-hidden`}>
       {/* Toolbar */}
       <div className={`flex items-center justify-between px-4 py-2 bg-gray-50 border-b border-gray-200 transition-opacity duration-300 ${isFocused ? 'opacity-60 hover:opacity-100' : 'opacity-100'}`}>
         <div className="flex items-center space-x-3">
@@ -121,7 +121,7 @@ export default function EnhancedWritingArea({ value = '', onChange, wordLimit, p
                 onClick={() => setSelectedFont(font)}
                 className={`px-2.5 py-1 text-xs rounded-md transition-all ${
                   selectedFont.key === font.key
-                    ? 'bg-indigo-100 text-indigo-700 font-medium'
+                    ? 'bg-emerald-100 text-emerald-700 font-medium'
                     : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
                 }`}
               >

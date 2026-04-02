@@ -3,90 +3,211 @@ import { useState } from 'react';
 import { useRouter } from 'next/router';
 import { useToast } from '../components/ToastContext';
 
-// SVG illustration of students/education scene
+// Polished flat-style campus illustration
 function CampusIllustration() {
   return (
-    <svg viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-auto max-w-md mx-auto">
-      {/* Background elements */}
-      <circle cx="250" cy="260" r="180" fill="#D1FAE5" opacity="0.5" />
-      <circle cx="350" cy="180" r="80" fill="#A7F3D0" opacity="0.4" />
-      <circle cx="140" cy="340" r="60" fill="#6EE7B7" opacity="0.3" />
+    <svg viewBox="0 0 520 440" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-auto max-w-lg mx-auto">
+      {/* Soft background glow */}
+      <ellipse cx="260" cy="240" rx="210" ry="190" fill="#D1FAE5" opacity="0.35" />
 
-      {/* Building / University */}
-      <rect x="150" y="160" width="200" height="160" rx="8" fill="#065F46" />
-      <rect x="160" y="170" width="180" height="10" rx="2" fill="#047857" />
-      <rect x="170" y="140" width="160" height="30" rx="4" fill="#047857" />
-      {/* Pillars */}
-      <rect x="185" y="190" width="12" height="120" rx="2" fill="#D1FAE5" />
-      <rect x="220" y="190" width="12" height="120" rx="2" fill="#D1FAE5" />
-      <rect x="268" y="190" width="12" height="120" rx="2" fill="#D1FAE5" />
-      <rect x="303" y="190" width="12" height="120" rx="2" fill="#D1FAE5" />
-      {/* Door */}
-      <rect x="230" y="250" width="40" height="70" rx="20" fill="#10B981" />
-      <circle cx="260" cy="290" r="3" fill="#065F46" />
-      {/* Windows */}
-      <rect x="178" y="200" width="25" height="30" rx="3" fill="#A7F3D0" />
-      <rect x="297" y="200" width="25" height="30" rx="3" fill="#A7F3D0" />
-      {/* Roof triangle */}
-      <polygon points="250,110 150,160 350,160" fill="#047857" />
-      <circle cx="250" cy="140" r="8" fill="#ECFDF5" />
+      {/* Ground plane */}
+      <ellipse cx="260" cy="370" rx="230" ry="28" fill="#A7F3D0" opacity="0.5" />
 
-      {/* Student 1 — walking with book */}
-      <circle cx="100" cy="280" r="18" fill="#F59E0B" /> {/* head */}
-      <rect x="88" y="298" width="24" height="35" rx="8" fill="#10B981" /> {/* body */}
-      <rect x="85" y="333" width="10" height="25" rx="3" fill="#1F2937" /> {/* leg */}
-      <rect x="105" y="333" width="10" height="25" rx="3" fill="#1F2937" /> {/* leg */}
-      <rect x="110" y="300" width="8" height="20" rx="2" fill="#065F46" /> {/* book */}
-      {/* Hair */}
-      <ellipse cx="100" cy="270" rx="14" ry="8" fill="#1F2937" />
+      {/* ── Tree left ── */}
+      <rect x="58" y="300" width="7" height="52" rx="3.5" fill="#78350F" />
+      <ellipse cx="61" cy="282" rx="28" ry="30" fill="#047857" />
+      <ellipse cx="48" cy="296" rx="16" ry="17" fill="#059669" />
+      <ellipse cx="76" cy="294" rx="16" ry="17" fill="#059669" />
 
-      {/* Student 2 — standing with laptop */}
-      <circle cx="400" cy="270" r="18" fill="#8B5CF6" /> {/* head */}
-      <rect x="388" y="288" width="24" height="38" rx="8" fill="#059669" /> {/* body */}
-      <rect x="385" y="326" width="10" height="28" rx="3" fill="#374151" /> {/* leg */}
-      <rect x="405" y="326" width="10" height="28" rx="3" fill="#374151" /> {/* leg */}
-      <rect x="380" y="300" width="20" height="14" rx="2" fill="#6B7280" /> {/* laptop */}
-      <rect x="382" y="302" width="16" height="8" rx="1" fill="#93C5FD" /> {/* screen */}
-      {/* Hair */}
-      <ellipse cx="400" cy="260" rx="12" ry="6" fill="#1F2937" />
+      {/* ── Tree right ── */}
+      <rect x="442" y="306" width="7" height="46" rx="3.5" fill="#78350F" />
+      <ellipse cx="445" cy="290" rx="24" ry="26" fill="#047857" />
+      <ellipse cx="434" cy="302" rx="14" ry="15" fill="#059669" />
+      <ellipse cx="458" cy="300" rx="14" ry="15" fill="#059669" />
 
-      {/* Student 3 — sitting on bench reading */}
-      <rect x="300" y="350" width="60" height="10" rx="3" fill="#047857" /> {/* bench */}
-      <circle cx="330" cy="330" r="15" fill="#EC4899" /> {/* head */}
-      <rect x="320" y="345" width="20" height="25" rx="6" fill="#34D399" /> {/* body */}
-      <rect x="315" y="342" width="12" height="16" rx="2" fill="#F3F4F6" /> {/* book */}
-      <rect x="317" y="344" width="8" height="5" rx="1" fill="#9CA3AF" /> {/* text lines */}
-      {/* Hair */}
-      <path d="M320 325 Q330 310 340 325" fill="#1F2937" />
-      <ellipse cx="330" cy="322" rx="14" ry="6" fill="#1F2937" />
+      {/* ── Small bush far left ── */}
+      <ellipse cx="24" cy="356" rx="18" ry="12" fill="#10B981" opacity="0.6" />
 
-      {/* Trees */}
-      <rect x="60" y="340" width="8" height="40" rx="2" fill="#92400E" />
-      <circle cx="64" cy="325" r="22" fill="#059669" />
-      <circle cx="52" cy="332" r="15" fill="#10B981" />
-      <circle cx="76" cy="332" r="15" fill="#10B981" />
+      {/* ── Small bush far right ── */}
+      <ellipse cx="496" cy="352" rx="16" ry="10" fill="#10B981" opacity="0.6" />
 
-      <rect x="430" y="330" width="8" height="40" rx="2" fill="#92400E" />
-      <circle cx="434" cy="315" r="22" fill="#059669" />
-      <circle cx="422" cy="322" r="15" fill="#10B981" />
-      <circle cx="446" cy="322" r="15" fill="#10B981" />
+      {/* ══════ BUILDING ══════ */}
+      {/* Main facade */}
+      <rect x="145" y="165" width="230" height="175" rx="4" fill="#065F46" />
 
-      {/* Ground */}
-      <ellipse cx="250" cy="380" rx="220" ry="20" fill="#A7F3D0" opacity="0.6" />
+      {/* Pediment (triangular top) */}
+      <polygon points="260,100 135,168 385,168" fill="#047857" />
+      {/* Pediment inner line */}
+      <polygon points="260,118 165,168 355,168" fill="#065F46" opacity="0.4" />
 
-      {/* Floating elements */}
-      <g opacity="0.6">
-        <rect x="80" y="160" width="16" height="20" rx="2" fill="#FCD34D" transform="rotate(-15 88 170)" />
-        <rect x="82" y="164" width="8" height="2" rx="1" fill="#92400E" transform="rotate(-15 86 165)" />
-        <rect x="82" y="168" width="10" height="2" rx="1" fill="#92400E" transform="rotate(-15 87 169)" />
+      {/* Entablature / header band */}
+      <rect x="145" y="165" width="230" height="14" rx="2" fill="#047857" />
+      <rect x="145" y="175" width="230" height="4" fill="#034E3B" opacity="0.3" />
+
+      {/* Columns — 4 evenly spaced */}
+      {[186, 226, 274, 314].map((x) => (
+        <g key={x}>
+          {/* Column shaft */}
+          <rect x={x} y="185" width="14" height="110" rx="3" fill="#ECFDF5" />
+          {/* Column capital (top) */}
+          <rect x={x - 2} y="183" width="18" height="6" rx="2" fill="#D1FAE5" />
+          {/* Column base */}
+          <rect x={x - 2} y="293" width="18" height="6" rx="2" fill="#D1FAE5" />
+        </g>
+      ))}
+
+      {/* Central doorway */}
+      <rect x="240" y="260" width="40" height="80" rx="20" fill="#10B981" />
+      <rect x="246" y="266" width="28" height="74" rx="14" fill="#059669" />
+      <circle cx="268" cy="305" r="3" fill="#D1FAE5" />
+
+      {/* Windows — left pair */}
+      <rect x="162" y="208" width="22" height="28" rx="4" fill="#A7F3D0" />
+      <rect x="162" y="248" width="22" height="28" rx="4" fill="#A7F3D0" />
+      {/* Window panes */}
+      <line x1="173" y1="208" x2="173" y2="236" stroke="#065F46" strokeWidth="1.5" opacity="0.3" />
+      <line x1="162" y1="222" x2="184" y2="222" stroke="#065F46" strokeWidth="1.5" opacity="0.3" />
+      <line x1="173" y1="248" x2="173" y2="276" stroke="#065F46" strokeWidth="1.5" opacity="0.3" />
+      <line x1="162" y1="262" x2="184" y2="262" stroke="#065F46" strokeWidth="1.5" opacity="0.3" />
+
+      {/* Windows — right pair */}
+      <rect x="336" y="208" width="22" height="28" rx="4" fill="#A7F3D0" />
+      <rect x="336" y="248" width="22" height="28" rx="4" fill="#A7F3D0" />
+      <line x1="347" y1="208" x2="347" y2="236" stroke="#065F46" strokeWidth="1.5" opacity="0.3" />
+      <line x1="336" y1="222" x2="358" y2="222" stroke="#065F46" strokeWidth="1.5" opacity="0.3" />
+      <line x1="347" y1="248" x2="347" y2="276" stroke="#065F46" strokeWidth="1.5" opacity="0.3" />
+      <line x1="336" y1="262" x2="358" y2="262" stroke="#065F46" strokeWidth="1.5" opacity="0.3" />
+
+      {/* Pediment clock / emblem */}
+      <circle cx="260" cy="138" r="12" fill="#ECFDF5" />
+      <circle cx="260" cy="138" r="9" fill="none" stroke="#047857" strokeWidth="1.5" />
+      <line x1="260" y1="132" x2="260" y2="138" stroke="#047857" strokeWidth="1.5" />
+      <line x1="260" y1="138" x2="264" y2="142" stroke="#047857" strokeWidth="1.5" />
+
+      {/* Steps */}
+      <rect x="215" y="340" width="90" height="8" rx="2" fill="#A7F3D0" />
+      <rect x="225" y="334" width="70" height="8" rx="2" fill="#D1FAE5" />
+
+      {/* ══════ STUDENT 1 — left, walking with book ══════ */}
+      <g transform="translate(105, 268)">
+        {/* Shadow */}
+        <ellipse cx="0" cy="90" rx="16" ry="5" fill="#000" opacity="0.06" />
+        {/* Legs */}
+        <rect x="-9" y="52" width="8" height="34" rx="4" fill="#1E3A5F" />
+        <rect x="2" y="52" width="8" height="34" rx="4" fill="#1E3A5F" />
+        {/* Body */}
+        <rect x="-11" y="18" width="22" height="38" rx="8" fill="#F97316" />
+        {/* Arms */}
+        <rect x="-16" y="22" width="7" height="26" rx="3.5" fill="#EA580C" />
+        <rect x="10" y="22" width="7" height="26" rx="3.5" fill="#EA580C" />
+        {/* Book in arm */}
+        <rect x="14" y="26" width="7" height="16" rx="1.5" fill="#3B82F6" />
+        <rect x="15" y="28" width="5" height="2" rx="1" fill="#93C5FD" />
+        <rect x="15" y="32" width="5" height="2" rx="1" fill="#93C5FD" />
+        {/* Head */}
+        <circle cx="0" cy="6" r="15" fill="#D97706" />
+        {/* Hair */}
+        <ellipse cx="0" cy="-2" rx="13" ry="8" fill="#292524" />
+        {/* Face */}
+        <circle cx="-4" cy="4" r="1.5" fill="#1C1917" />
+        <circle cx="5" cy="4" r="1.5" fill="#1C1917" />
+        <path d="M-2 9 Q0 12 3 9" stroke="#1C1917" strokeWidth="1.2" fill="none" strokeLinecap="round" />
       </g>
-      <g opacity="0.6">
-        <circle cx="420" cy="160" r="10" fill="#FBBF24" />
-        <text x="416" y="165" fill="#92400E" fontSize="12" fontWeight="bold">A+</text>
+
+      {/* ══════ STUDENT 2 — right, with laptop ══════ */}
+      <g transform="translate(410, 262)">
+        {/* Shadow */}
+        <ellipse cx="0" cy="96" rx="16" ry="5" fill="#000" opacity="0.06" />
+        {/* Legs */}
+        <rect x="-9" y="56" width="8" height="36" rx="4" fill="#374151" />
+        <rect x="2" y="56" width="8" height="36" rx="4" fill="#374151" />
+        {/* Body */}
+        <rect x="-12" y="18" width="24" height="42" rx="8" fill="#7C3AED" />
+        {/* Arms */}
+        <rect x="-18" y="24" width="8" height="28" rx="4" fill="#6D28D9" />
+        <rect x="10" y="24" width="8" height="28" rx="4" fill="#6D28D9" />
+        {/* Laptop */}
+        <rect x="-16" y="38" width="22" height="14" rx="2" fill="#4B5563" />
+        <rect x="-14" y="40" width="18" height="9" rx="1" fill="#60A5FA" />
+        {/* Head */}
+        <circle cx="0" cy="6" r="16" fill="#A78BFA" />
+        {/* Hair */}
+        <ellipse cx="0" cy="-4" rx="14" ry="9" fill="#1C1917" />
+        {/* Face */}
+        <circle cx="-4" cy="4" r="1.5" fill="#1C1917" />
+        <circle cx="5" cy="4" r="1.5" fill="#1C1917" />
+        <path d="M-2 10 Q0 13 3 10" stroke="#1C1917" strokeWidth="1.2" fill="none" strokeLinecap="round" />
       </g>
-      <g opacity="0.5">
-        <path d="M370 120 L375 130 L385 132 L377 138 L379 148 L370 143 L361 148 L363 138 L355 132 L365 130 Z" fill="#FCD34D" />
+
+      {/* ══════ STUDENT 3 — center-right, sitting on bench ══════ */}
+      <g transform="translate(340, 325)">
+        {/* Bench */}
+        <rect x="-28" y="22" width="56" height="7" rx="3" fill="#047857" />
+        <rect x="-24" y="29" width="5" height="16" rx="2" fill="#065F46" />
+        <rect x="20" y="29" width="5" height="16" rx="2" fill="#065F46" />
+        {/* Sitting body */}
+        <rect x="-9" y="2" width="18" height="24" rx="6" fill="#EC4899" />
+        {/* Legs (bent, sitting) */}
+        <rect x="-10" y="22" width="8" height="18" rx="4" fill="#1E3A5F" />
+        <rect x="2" y="22" width="8" height="18" rx="4" fill="#1E3A5F" />
+        {/* Head */}
+        <circle cx="0" cy="-10" r="14" fill="#F472B6" />
+        {/* Hair */}
+        <ellipse cx="0" cy="-18" rx="12" ry="7" fill="#1C1917" />
+        <ellipse cx="-8" cy="-14" rx="5" ry="8" fill="#1C1917" />
+        <ellipse cx="8" cy="-14" rx="5" ry="8" fill="#1C1917" />
+        {/* Book in lap */}
+        <rect x="-14" y="4" width="12" height="15" rx="2" fill="#FEF3C7" />
+        <rect x="-12" y="7" width="8" height="1.5" rx="0.75" fill="#D97706" opacity="0.5" />
+        <rect x="-12" y="10" width="6" height="1.5" rx="0.75" fill="#D97706" opacity="0.5" />
+        <rect x="-12" y="13" width="7" height="1.5" rx="0.75" fill="#D97706" opacity="0.5" />
+        {/* Face */}
+        <circle cx="-4" cy="-12" r="1.5" fill="#1C1917" />
+        <circle cx="4" cy="-12" r="1.5" fill="#1C1917" />
+        <path d="M-2 -7 Q0 -4 3 -7" stroke="#1C1917" strokeWidth="1.2" fill="none" strokeLinecap="round" />
       </g>
+
+      {/* ══════ FLOATING ACADEMIC ELEMENTS ══════ */}
+      {/* Graduation cap — top left */}
+      <g transform="translate(80, 140)" opacity="0.7">
+        <polygon points="0,-6 -14,2 0,10 14,2" fill="#1E3A5F" />
+        <rect x="-1" y="-6" width="2" height="4" fill="#1E3A5F" />
+        <rect x="-9" y="2" width="18" height="3" rx="1" fill="#1E40AF" />
+        <line x1="12" y1="4" x2="16" y2="14" stroke="#F59E0B" strokeWidth="1.5" />
+        <circle cx="16" cy="15" r="2" fill="#F59E0B" />
+      </g>
+
+      {/* Star — top right */}
+      <g transform="translate(430, 128)" opacity="0.6">
+        <path d="M0,-12 L3,-4 L12,-4 L5,2 L7,10 L0,5 L-7,10 L-5,2 L-12,-4 L-3,-4 Z" fill="#FBBF24" />
+      </g>
+
+      {/* A+ badge — upper right */}
+      <g transform="translate(465, 180)" opacity="0.65">
+        <circle cx="0" cy="0" r="14" fill="#FDE68A" />
+        <circle cx="0" cy="0" r="11" fill="#FEF3C7" />
+        <text x="-8" y="5" fill="#92400E" fontSize="11" fontWeight="bold" fontFamily="system-ui">A+</text>
+      </g>
+
+      {/* Open book — lower left */}
+      <g transform="translate(40, 318) rotate(-8)" opacity="0.55">
+        <path d="M-12,0 Q0,-8 12,0 L12,16 Q0,8 -12,16 Z" fill="#BFDBFE" />
+        <path d="M12,0 Q24,-8 36,0 L36,16 Q24,8 12,16 Z" fill="#DBEAFE" />
+        <line x1="12" y1="0" x2="12" y2="16" stroke="#60A5FA" strokeWidth="1" />
+      </g>
+
+      {/* Pencil — far upper left */}
+      <g transform="translate(56, 186) rotate(25)" opacity="0.5">
+        <rect x="0" y="0" width="5" height="28" rx="1" fill="#FBBF24" />
+        <polygon points="0,28 2.5,36 5,28" fill="#F59E0B" />
+        <rect x="0" y="0" width="5" height="4" rx="1" fill="#F472B6" />
+      </g>
+
+      {/* Small dots decoration */}
+      <circle cx="490" cy="260" r="3" fill="#34D399" opacity="0.4" />
+      <circle cx="480" cy="278" r="2" fill="#A78BFA" opacity="0.4" />
+      <circle cx="30" cy="270" r="3" fill="#F97316" opacity="0.3" />
+      <circle cx="20" cy="290" r="2" fill="#FBBF24" opacity="0.3" />
     </svg>
   );
 }
@@ -179,11 +300,14 @@ export default function Login() {
 
           {/* Text */}
           <div className="text-center max-w-md">
-            <h1 className="text-3xl font-bold text-white mb-3">
-              Welcome to ALU EPT Portal
+            <p className="text-emerald-200 text-sm font-medium uppercase tracking-widest mb-2">
+              African Leadership University
+            </p>
+            <h1 className="text-3xl font-bold text-white mb-4">
+              CEFR Standard English Proficiency Test
             </h1>
             <p className="text-emerald-100 text-lg leading-relaxed">
-              Your gateway to the English Proficiency Test. Register, book your test date, and complete your assessment all in one place.
+              Congratulations on your conditional admission. You can register, book your test date, and complete your proficiency assessment right here!
             </p>
           </div>
 
@@ -210,8 +334,8 @@ export default function Login() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-white">ALU EPT Portal</h1>
-          <p className="text-emerald-100 text-sm mt-1">English Proficiency Test</p>
+          <p className="text-emerald-200 text-xs font-medium uppercase tracking-widest">African Leadership University</p>
+          <h1 className="text-xl font-bold text-white mt-1">CEFR Standard English Proficiency Test</h1>
         </div>
 
         <div className="flex-1 flex items-center justify-center px-6 py-12">
@@ -224,7 +348,7 @@ export default function Login() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                   </svg>
                 </div>
-                <span className="text-xl font-bold text-gray-900">EPT Portal</span>
+                <span className="text-xl font-bold text-gray-900">English Proficiency Test</span>
               </div>
 
               <h2 className="text-3xl font-bold text-gray-900 mb-2">

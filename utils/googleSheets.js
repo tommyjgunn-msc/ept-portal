@@ -2,231 +2,153 @@
 import { google } from 'googleapis';
 
 export async function getGoogleSheets() {
-  try {
-    console.log('Initializing Google Sheets client...');
-    
-    const private_key = process.env.GOOGLE_PRIVATE_KEY
-      ? process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n').replace(/"/g, '')
-      : '';
+  const private_key = process.env.GOOGLE_PRIVATE_KEY
+    ? process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n').replace(/"/g, '')
+    : '';
 
-    console.log('Credential check:', {
-      hasEmail: !!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      hasPrivateKey: !!private_key,
-      hasSheetId: !!process.env.GOOGLE_SHEET_ID,
-      keyLength: private_key.length
-    });
+  const auth = new google.auth.GoogleAuth({
+    credentials: {
+      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      private_key: private_key,
+    },
+    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+  });
 
-    const auth = new google.auth.GoogleAuth({
-      credentials: {
-        client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-        private_key: private_key
-      },
-      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-    });
-
-    const sheets = google.sheets({ version: 'v4', auth });
-    return sheets;
-  } catch (error) {
-    console.error('Error in getGoogleSheets:', error);
-    throw error;
-  }
+  return google.sheets({ version: 'v4', auth });
 }
 
 export async function testConnection() {
   try {
-    console.log('Starting connection test...');
     const sheets = await getGoogleSheets();
-    
-    console.log('Attempting to fetch spreadsheet...', {
-      sheetId: process.env.GOOGLE_SHEET_ID
-    });
-
     const metadata = await sheets.spreadsheets.get({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
-    });
-
-    console.log('Connection successful!', {
-      spreadsheetTitle: metadata.data.properties.title,
-      sheetCount: metadata.data.sheets.length,
-      sheets: metadata.data.sheets.map(s => s.properties.title)
     });
 
     return {
       success: true,
       spreadsheetTitle: metadata.data.properties.title,
-      sheets: metadata.data.sheets.map(s => s.properties.title)
+      sheets: metadata.data.sheets.map(s => s.properties.title),
     };
   } catch (error) {
-    console.error('Connection test failed:', {
-      message: error.message,
-      details: error.response?.data || 'No additional details'
-    });
-    
     return {
       success: false,
       error: error.message,
-      details: error.response?.data || 'No additional details'
     };
   }
 }
 
 export async function verifyEptId(eptId) {
-  try {
-    console.log('Verifying EPT ID:', eptId);
-    
-    const sheets = await getGoogleSheets();
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId: process.env.GOOGLE_SHEET_ID,
-      range: 'Auth!A2:C',  // ✅ FIXED: Changed from 'Students!A2:C'
-    });
+  const sheets = await getGoogleSheets();
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: process.env.GOOGLE_SHEET_ID,
+    range: 'Auth!A2:C',
+  });
 
-    console.log('Auth sheet response:', {
-      hasValues: !!response.data.values,
-      rowCount: response.data.values?.length || 0
-    });
+  const rows = response.data.values || [];
+  const user = rows.find(row => row[2] === eptId);
 
-    const rows = response.data.values || [];
-    const user = rows.find(row => row[2] === eptId);
+  if (!user) return null;
 
-    if (!user) {
-      console.log('No user found with EPT ID:', eptId);
-      return null;
-    }
-
-    return {
-      name: user[0],
-      email: user[1],
-      eptId: user[2]
-    };
-  } catch (error) {
-    console.error('Error in verifyEptId:', error);
-    throw error;
-  }
+  return {
+    name: user[0],
+    email: user[1],
+    eptId: user[2],
+  };
 }
 
 export async function getAvailableDates() {
-  try {
-    const sheets = await getGoogleSheets();
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId: process.env.GOOGLE_SHEET_ID,
-      range: 'Bookings!A2:E',
-    });
+  const sheets = await getGoogleSheets();
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: process.env.GOOGLE_SHEET_ID,
+    range: 'Bookings!A2:E',
+  });
 
-    const bookings = response.data.values || [];
-    const dateStats = bookings.reduce((acc, [,,, hasLaptop, date]) => {
-      const cleanDate = date ? date.replace(/^'|'$/g, '').trim() : '';
-      if (!cleanDate) return acc;
-      
-      if (!acc[cleanDate]) {
-        acc[cleanDate] = { withLaptop: 0, withoutLaptop: 0 };
-      }
-      if (hasLaptop === 'Yes') {
-        acc[cleanDate].withLaptop++;
-      } else {
-        acc[cleanDate].withoutLaptop++;
-      }
-      return acc;
-    }, {});
+  const bookings = response.data.values || [];
+  return bookings.reduce((acc, [,,, hasLaptop, date]) => {
+    const cleanDate = date ? date.replace(/^'|'$/g, '').trim() : '';
+    if (!cleanDate) return acc;
 
-    return dateStats;
-  } catch (error) {
-    console.error('Error in getAvailableDates:', error);
-    throw error;
-  }
+    if (!acc[cleanDate]) {
+      acc[cleanDate] = { withLaptop: 0, withoutLaptop: 0 };
+    }
+    if (hasLaptop === 'Yes') {
+      acc[cleanDate].withLaptop++;
+    } else {
+      acc[cleanDate].withoutLaptop++;
+    }
+    return acc;
+  }, {});
 }
 
 export async function createBooking(bookingData) {
-  try {
-    console.log('Creating booking:', bookingData);
-    
-    const formattedDate = bookingData.selectedDate
-      ? `'${bookingData.selectedDate}'`  
-      : '';
+  const formattedDate = bookingData.selectedDate
+    ? `'${bookingData.selectedDate}'`
+    : '';
 
-    const sheets = await getGoogleSheets();
-    const response = await sheets.spreadsheets.values.append({
-      spreadsheetId: process.env.GOOGLE_SHEET_ID,
-      range: 'Bookings!A2:E',
-      valueInputOption: 'RAW', 
-      insertDataOption: 'INSERT_ROWS',
-      requestBody: {
-        values: [[
-          bookingData.name,
-          bookingData.email,
-          bookingData.eptId,
-          bookingData.hasLaptop ? 'Yes' : 'No',
-          formattedDate
-        ]]
-      }
-    });
+  const sheets = await getGoogleSheets();
+  const response = await sheets.spreadsheets.values.append({
+    spreadsheetId: process.env.GOOGLE_SHEET_ID,
+    range: 'Bookings!A2:E',
+    valueInputOption: 'RAW',
+    insertDataOption: 'INSERT_ROWS',
+    requestBody: {
+      values: [[
+        bookingData.name,
+        bookingData.email,
+        bookingData.eptId,
+        bookingData.hasLaptop ? 'Yes' : 'No',
+        formattedDate,
+      ]],
+    },
+  });
 
-    console.log('Booking creation response:', response.data);
-
-    return {
-      success: true,
-      range: response.data.updates.updatedRange,
-      data: bookingData
-    };
-  } catch (error) {
-    console.error('Error in createBooking:', error);
-    throw error;
-  }
+  return {
+    success: true,
+    range: response.data.updates.updatedRange,
+    data: bookingData,
+  };
 }
 
 export async function getBookingsCount() {
-  try {
-    const sheets = await getGoogleSheets();
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId: process.env.GOOGLE_SHEET_ID,
-      range: 'Bookings!A2:E',
-    });
+  const sheets = await getGoogleSheets();
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: process.env.GOOGLE_SHEET_ID,
+    range: 'Bookings!A2:E',
+  });
 
-    const bookings = response.data.values || [];
-    const dateStats = bookings.reduce((acc, [,,, hasLaptop, date]) => {
-      const cleanDate = date ? date.replace(/^'|'$/g, '').trim() : '';
-      if (!cleanDate) return acc;
-      
-      if (!acc[cleanDate]) {
-        acc[cleanDate] = { withLaptop: 0, withoutLaptop: 0 };
-      }
-      if (hasLaptop === 'Yes') {
-        acc[cleanDate].withLaptop++;
-      } else {
-        acc[cleanDate].withoutLaptop++;
-      }
-      return acc;
-    }, {});
+  const bookings = response.data.values || [];
+  return bookings.reduce((acc, [,,, hasLaptop, date]) => {
+    const cleanDate = date ? date.replace(/^'|'$/g, '').trim() : '';
+    if (!cleanDate) return acc;
 
-    return dateStats;
-  } catch (error) {
-    console.error('Error in getBookingsCount:', error);
-    throw error;
-  }
+    if (!acc[cleanDate]) {
+      acc[cleanDate] = { withLaptop: 0, withoutLaptop: 0 };
+    }
+    if (hasLaptop === 'Yes') {
+      acc[cleanDate].withLaptop++;
+    } else {
+      acc[cleanDate].withoutLaptop++;
+    }
+    return acc;
+  }, {});
 }
 
 export async function getTestForDate(date) {
-  try {
-    const testDate = new Date(date);
-    const dateString = `${testDate.getFullYear()}${String(testDate.getMonth() + 1).padStart(2, '0')}${String(testDate.getDate()).padStart(2, '0')}`;
-    
-    const testIds = [
-      `reading_${dateString}`,
-      `listening_${dateString}`,
-      `writing_${dateString}`
-    ];
+  const testDate = new Date(date);
+  const dateString = `${testDate.getFullYear()}${String(testDate.getMonth() + 1).padStart(2, '0')}${String(testDate.getDate()).padStart(2, '0')}`;
 
-    const sheets = await getGoogleSheets();
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId: process.env.GOOGLE_SHEET_ID,
-      range: 'Tests!A2:G',
-    });
+  const testIds = [
+    `reading_${dateString}`,
+    `listening_${dateString}`,
+    `writing_${dateString}`,
+  ];
 
-    const tests = response.data.values || [];
-    const todaysTests = tests.filter(test => testIds.includes(test[0]));
+  const sheets = await getGoogleSheets();
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: process.env.GOOGLE_SHEET_ID,
+    range: 'Tests!A2:G',
+  });
 
-    return todaysTests;
-  } catch (error) {
-    console.error('Error fetching tests:', error);
-    throw error;
-  }
+  const tests = response.data.values || [];
+  return tests.filter(test => testIds.includes(test[0]));
 }

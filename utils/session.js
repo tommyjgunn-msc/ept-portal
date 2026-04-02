@@ -1,68 +1,75 @@
-// utils/session.js — Server-side session management with httpOnly cookies
-import { randomUUID, randomBytes, createHmac } from 'crypto';
+// utils/session.js — Signed cookie sessions for Vercel serverless
+// Uses HMAC-signed tokens instead of in-memory storage so sessions
+// survive across different serverless function instances.
+import { createHmac, timingSafeEqual } from 'crypto';
 
-// In-memory session store (resets on cold start — acceptable for Vercel scale)
-const sessions = new Map();
-
-// Clean up expired sessions periodically
 const SESSION_TTL = 4 * 60 * 60 * 1000; // 4 hours
-const CLEANUP_INTERVAL = 15 * 60 * 1000; // 15 minutes
+const COOKIE_NAME = 'ept_session';
+const isProduction = process.env.NODE_ENV === 'production';
 
-let lastCleanup = Date.now();
+// Secret for signing — falls back to a derived key from the Google credentials
+function getSecret() {
+  return process.env.SESSION_SECRET
+    || process.env.GOOGLE_PRIVATE_KEY?.slice(0, 64)
+    || 'ept-portal-default-secret-change-me';
+}
 
-function cleanupSessions() {
-  const now = Date.now();
-  if (now - lastCleanup < CLEANUP_INTERVAL) return;
-  lastCleanup = now;
+function sign(payload) {
+  const data = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  const sig = createHmac('sha256', getSecret()).update(data).digest('base64url');
+  return `${data}.${sig}`;
+}
 
-  for (const [token, session] of sessions) {
-    if (now - session.createdAt > SESSION_TTL) {
-      sessions.delete(token);
-    }
+function verify(token) {
+  if (!token || typeof token !== 'string') return null;
+  const parts = token.split('.');
+  if (parts.length !== 2) return null;
+
+  const [data, sig] = parts;
+  const expectedSig = createHmac('sha256', getSecret()).update(data).digest('base64url');
+
+  // Timing-safe comparison
+  try {
+    const sigBuf = Buffer.from(sig, 'base64url');
+    const expectedBuf = Buffer.from(expectedSig, 'base64url');
+    if (sigBuf.length !== expectedBuf.length) return null;
+    if (!timingSafeEqual(sigBuf, expectedBuf)) return null;
+  } catch {
+    return null;
+  }
+
+  try {
+    const payload = JSON.parse(Buffer.from(data, 'base64url').toString());
+    // Check expiry
+    if (Date.now() > payload.exp) return null;
+    return payload;
+  } catch {
+    return null;
   }
 }
 
 export function createSession(user) {
-  cleanupSessions();
-
-  const token = randomUUID() + '-' + randomBytes(16).toString('hex');
-  const session = {
-    token,
+  const payload = {
     user: {
       name: user.name,
       email: user.email,
       eptId: user.eptId,
     },
-    createdAt: Date.now(),
+    iat: Date.now(),
+    exp: Date.now() + SESSION_TTL,
   };
-
-  sessions.set(token, session);
-  return token;
+  return sign(payload);
 }
 
 export function getSession(token) {
-  if (!token || typeof token !== 'string') return null;
-  cleanupSessions();
-
-  const session = sessions.get(token);
-  if (!session) return null;
-
-  // Check expiry
-  if (Date.now() - session.createdAt > SESSION_TTL) {
-    sessions.delete(token);
-    return null;
-  }
-
-  return session;
+  const payload = verify(token);
+  if (!payload) return null;
+  return { user: payload.user, token };
 }
 
-export function destroySession(token) {
-  if (token) sessions.delete(token);
+export function destroySession() {
+  // Nothing to destroy server-side — just clear the cookie
 }
-
-// Cookie helpers
-const COOKIE_NAME = 'ept_session';
-const isProduction = process.env.NODE_ENV === 'production';
 
 export function setSessionCookie(res, token) {
   const cookie = [
@@ -70,7 +77,7 @@ export function setSessionCookie(res, token) {
     'Path=/',
     'HttpOnly',
     'SameSite=Lax',
-    `Max-Age=${SESSION_TTL / 1000}`,
+    `Max-Age=${Math.floor(SESSION_TTL / 1000)}`,
     isProduction ? 'Secure' : '',
   ].filter(Boolean).join('; ');
 
@@ -96,22 +103,18 @@ export function getSessionToken(req) {
   return match ? match[1] : null;
 }
 
-// CSRF token generation and validation
+// CSRF token generation
 export function generateCsrfToken(sessionToken) {
-  const secret = process.env.CSRF_SECRET || sessionToken;
-  return createHmac('sha256', secret)
+  return createHmac('sha256', getSecret())
     .update(sessionToken + '_csrf')
     .digest('hex')
     .slice(0, 32);
 }
 
 export function validateCsrfToken(req, sessionToken) {
-  // Skip CSRF for GET/HEAD/OPTIONS
   if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return true;
-
   const csrfHeader = req.headers['x-csrf-token'];
   if (!csrfHeader) return false;
-
   const expected = generateCsrfToken(sessionToken);
   return csrfHeader === expected;
 }

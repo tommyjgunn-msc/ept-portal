@@ -62,19 +62,30 @@ export default function Navigation() {
           setBookingDetails(JSON.parse(storedBookingDetails));
         }
 
-        // Verify session is still valid via cookie
+        // Verify session is still valid via cookie (non-blocking)
+        // Don't redirect on failure — let individual API calls handle auth.
+        // This prevents redirect loops right after login.
         if (storedUserData && !isLoginPage) {
-          const meRes = await fetch('/api/me');
-          if (!meRes.ok) {
-            // Session expired — clear local data
-            sessionStorage.removeItem('userData');
-            sessionStorage.removeItem('bookingDetails');
-            sessionStorage.removeItem('csrfToken');
-            setUserData(null);
-            setBookingDetails(null);
-            if (router.pathname !== '/login') {
+          try {
+            const meRes = await fetch('/api/me');
+            if (meRes.ok) {
+              const meData = await meRes.json();
+              // Refresh CSRF token
+              if (meData.csrfToken) {
+                sessionStorage.setItem('csrfToken', meData.csrfToken);
+              }
+            } else if (meRes.status === 401) {
+              // Session truly expired — clear and redirect
+              sessionStorage.removeItem('userData');
+              sessionStorage.removeItem('bookingDetails');
+              sessionStorage.removeItem('csrfToken');
+              setUserData(null);
+              setBookingDetails(null);
               router.push('/login');
             }
+            // For other errors (network, 500, etc.) — keep local data, don't redirect
+          } catch {
+            // Network error — keep local data
           }
         }
       } catch {
@@ -149,20 +160,9 @@ export default function Navigation() {
 
   if (isLoading && !isLoginPage) return <NavigationSkeleton />;
 
+  // No separate navigation on login — the login page handles its own header
   if (isLoginPage) {
-    return (
-      <nav className="bg-white/80 backdrop-blur-sm shadow-sm border-b border-gray-200/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <span className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                EPT Portal
-              </span>
-            </div>
-          </div>
-        </div>
-      </nav>
-    );
+    return null;
   }
 
   return (
@@ -170,8 +170,13 @@ export default function Navigation() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
-            <Link href="/" className="flex-shrink-0 flex items-center group">
-              <span className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent group-hover:from-indigo-700 group-hover:to-purple-700 transition-all duration-200">
+            <Link href="/home" className="flex-shrink-0 flex items-center gap-2 group">
+              <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center">
+                <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+              </div>
+              <span className="text-xl font-bold text-gray-900 group-hover:text-emerald-700 transition-colors">
                 EPT Portal
               </span>
             </Link>
@@ -206,7 +211,7 @@ export default function Navigation() {
                     className={`
                       relative overflow-hidden px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105
                       ${isTestActive
-                        ? 'text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-lg'
+                        ? 'text-white bg-emerald-600 hover:bg-emerald-700 shadow-lg'
                         : 'text-gray-500 bg-gray-100 cursor-not-allowed'
                       }
                     `}
@@ -234,7 +239,7 @@ export default function Navigation() {
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
                   className="flex items-center p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors duration-200"
                 >
-                  <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center">
+                  <div className="w-8 h-8 bg-emerald-600 rounded-full flex items-center justify-center">
                     <span className="text-white text-sm font-medium">
                       {userData.name.charAt(0).toUpperCase()}
                     </span>

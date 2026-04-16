@@ -75,7 +75,7 @@ export default function TestResults() {
                         {type !== 'writing' && (
                           <div className="w-full bg-gray-200 rounded-full h-2">
                             <div 
-                              className="bg-indigo-600 rounded-full h-2"
+                              className="bg-emerald-600 rounded-full h-2"
                               style={{ 
                                 width: `${(testResult.score / testResult.total_points) * 100}%` 
                               }}

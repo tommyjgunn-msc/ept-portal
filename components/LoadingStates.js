@@ -18,7 +18,7 @@ export const LoadingSpinner = ({
   };
 
   const variantClasses = {
-    primary: 'border-indigo-600',
+    primary: 'border-emerald-600',
     secondary: 'border-gray-600',
     white: 'border-white',
     success: 'border-green-600',
@@ -115,7 +115,7 @@ export const ProgressiveLoader = ({
       <div className="relative">
         <LoadingSpinner size="lg" />
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-8 h-8 bg-indigo-600 rounded-full animate-ping opacity-20"></div>
+          <div className="w-8 h-8 bg-emerald-600 rounded-full animate-ping opacity-20"></div>
         </div>
       </div>
       
@@ -127,7 +127,7 @@ export const ProgressiveLoader = ({
         {/* Progress indicator */}
         <div className="w-64 bg-gray-200 rounded-full h-2 overflow-hidden">
           <div 
-            className="h-2 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full transition-all duration-500 ease-out"
+            className="h-2 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full transition-all duration-500 ease-out"
             style={{ width: `${((displayStage + 1) / stages.length) * 100}%` }}
           />
         </div>
@@ -146,10 +146,10 @@ export const TestLoadingState = ({ testType = 'reading', className = '' }) => (
     <div className="bg-white rounded-xl shadow-lg p-8 max-w-md w-full mx-4">
       <div className="text-center">
         <div className="relative mb-6">
-          <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center mx-auto">
+          <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-full flex items-center justify-center mx-auto">
             <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
           </div>
-          <div className="absolute inset-0 w-16 h-16 border-4 border-indigo-200 rounded-full animate-pulse mx-auto"></div>
+          <div className="absolute inset-0 w-16 h-16 border-4 border-emerald-200 rounded-full animate-pulse mx-auto"></div>
         </div>
         
         <h2 className="text-2xl font-bold text-gray-900 mb-2">
@@ -164,14 +164,14 @@ export const TestLoadingState = ({ testType = 'reading', className = '' }) => (
           <div className="flex items-center justify-between text-sm">
             <span className="text-gray-500">Loading questions</span>
             <div className="flex space-x-1">
-              <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce"></div>
-              <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-              <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+              <div className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce"></div>
+              <div className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+              <div className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
             </div>
           </div>
           
           <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
-            <div className="h-1.5 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full animate-pulse"></div>
+            <div className="h-1.5 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full animate-pulse"></div>
           </div>
         </div>
       </div>
@@ -200,7 +200,7 @@ export const ErrorState = ({
       {onRetry && (
         <button
           onClick={onRetry}
-          className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
+          className="inline-flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors duration-200"
         >
           <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -225,7 +225,7 @@ export const LoadingButton = ({
   const baseClasses = "inline-flex items-center justify-center font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed";
   
   const variants = {
-    primary: "bg-indigo-600 text-white hover:bg-indigo-700 focus:ring-indigo-500",
+    primary: "bg-emerald-600 text-white hover:bg-emerald-700 focus:ring-emerald-500",
     secondary: "bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-500",
     success: "bg-green-600 text-white hover:bg-green-700 focus:ring-green-500",
     danger: "bg-red-600 text-white hover:bg-red-700 focus:ring-red-500"

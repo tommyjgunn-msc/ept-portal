@@ -126,7 +126,7 @@ export default function ProctoringWrapper({ children, onForcedSubmit }) {
       {showStartPrompt && !sessionStorage.getItem('maintain_fullscreen') && (
         <div className="fixed inset-0 bg-gray-900 bg-opacity-90 flex items-center justify-center z-50">
           <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
-            <h2 className="text-2xl font-bold text-indigo-700 mb-4">Ready to Begin Your Test</h2>
+            <h2 className="text-2xl font-bold text-emerald-700 mb-4">Ready to Begin Your Test</h2>
             <p className="mb-4">
               This test requires fullscreen mode and will monitor for:
             </p>
@@ -141,7 +141,7 @@ export default function ProctoringWrapper({ children, onForcedSubmit }) {
             </p>
             <button
               onClick={handleStartTest}
-              className="w-full bg-indigo-600 text-white py-3 px-4 rounded-md hover:bg-indigo-700 font-medium"
+              className="w-full bg-emerald-600 text-white py-3 px-4 rounded-md hover:bg-emerald-700 font-medium"
             >
               Enter Fullscreen & Start Test
             </button>
@@ -168,7 +168,7 @@ export default function ProctoringWrapper({ children, onForcedSubmit }) {
                   requestFullscreen();
                   setShowWarning(false);
                 }}
-                className="mt-4 w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700"
+                className="mt-4 w-full bg-emerald-600 text-white py-2 px-4 rounded-md hover:bg-emerald-700"
               >
                 Return to Fullscreen
               </button>

@@ -47,12 +47,12 @@ export const Button = ({
   ...props 
 }) => {
   const variants = {
-    primary: 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 focus:ring-indigo-500 shadow-lg',
+    primary: 'bg-emerald-600 text-white hover:bg-emerald-700 focus:ring-emerald-500 shadow-lg',
     secondary: 'bg-gray-100 text-gray-900 hover:bg-gray-200 focus:ring-gray-500',
     success: 'bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 focus:ring-green-500 shadow-lg',
     danger: 'bg-gradient-to-r from-red-500 to-rose-600 text-white hover:from-red-600 hover:to-rose-700 focus:ring-red-500 shadow-lg',
     ghost: 'text-gray-700 hover:bg-gray-100 focus:ring-gray-500',
-    outline: 'border-2 border-indigo-600 text-indigo-600 hover:bg-indigo-50 focus:ring-indigo-500'
+    outline: 'border-2 border-emerald-600 text-emerald-600 hover:bg-emerald-50 focus:ring-emerald-500'
   };
 
   const sizes = {
@@ -226,7 +226,7 @@ export const Input = ({
 }) => {
   const baseClasses = `
     block w-full rounded-lg border-gray-300 shadow-sm 
-    focus:border-indigo-500 focus:ring-indigo-500 transition-colors duration-200
+    focus:border-emerald-500 focus:ring-emerald-500 transition-colors duration-200
     ${error ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}
     ${icon ? (iconPosition === 'left' ? 'pl-10' : 'pr-10') : ''}
   `;
@@ -355,7 +355,7 @@ export const Toast = ({
           <div className="ml-4 flex-shrink-0 flex">
             <button
               onClick={onClose}
-              className={`inline-flex rounded-md p-1.5 hover:bg-opacity-20 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${typeConfig.iconColor}`}
+              className={`inline-flex rounded-md p-1.5 hover:bg-opacity-20 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 ${typeConfig.iconColor}`}
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -380,7 +380,7 @@ export const ProgressBar = ({
   const percentage = Math.min((value / max) * 100, 100);
   
   const variants = {
-    primary: 'bg-gradient-to-r from-indigo-500 to-purple-600',
+    primary: 'bg-emerald-500',
     success: 'bg-gradient-to-r from-green-500 to-emerald-600',
     warning: 'bg-gradient-to-r from-yellow-500 to-orange-600',
     danger: 'bg-gradient-to-r from-red-500 to-rose-600'
@@ -420,7 +420,7 @@ export const Badge = ({
 }) => {
   const variants = {
     default: 'bg-gray-100 text-gray-800',
-    primary: 'bg-indigo-100 text-indigo-800',
+    primary: 'bg-emerald-100 text-emerald-800',
     success: 'bg-green-100 text-green-800',
     warning: 'bg-yellow-100 text-yellow-800',
     danger: 'bg-red-100 text-red-800',
@@ -531,7 +531,7 @@ export const Alert = ({
             <div className="-mx-1.5 -my-1.5">
               <button
                 onClick={handleDismiss}
-                className={`inline-flex rounded-md p-1.5 hover:bg-opacity-20 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${typeConfig.iconColor}`}
+                className={`inline-flex rounded-md p-1.5 hover:bg-opacity-20 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 ${typeConfig.iconColor}`}
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -558,7 +558,7 @@ export const LoadingButton = ({
   const baseClasses = "inline-flex items-center justify-center font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed";
   
   const variants = {
-    primary: "bg-indigo-600 text-white hover:bg-indigo-700 focus:ring-indigo-500",
+    primary: "bg-emerald-600 text-white hover:bg-emerald-700 focus:ring-emerald-500",
     secondary: "bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-500",
     success: "bg-green-600 text-white hover:bg-green-700 focus:ring-green-500",
     danger: "bg-red-600 text-white hover:bg-red-700 focus:ring-red-500"

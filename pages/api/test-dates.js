@@ -1,10 +1,9 @@
+// pages/api/test-dates.js — Serve available test dates (authenticated)
 import { regularDates } from '../../utils/testDatesConfig';
+import { withAuth } from '../../utils/withAuth';
 
-export default function handler(req, res) {
-  try {
-    res.status(200).json({ regularDates });
-  } catch (error) {
-    console.error('Error fetching test dates:', error);
-    res.status(500).json({ message: 'Failed to fetch test dates' });
-  }
+function handler(req, res) {
+  return res.status(200).json({ regularDates });
 }
+
+export default withAuth(handler);

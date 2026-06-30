@@ -5,7 +5,7 @@ export const regularDates = [
     { date: 'Friday, 19 June', venues: 4, capacity: { withLaptop: 70, withoutLaptop: 30 } },
     { date: 'Friday, 26 June', venues: 4, capacity: { withLaptop: 70, withoutLaptop: 30 } },
     { date: 'Friday, 10 July', venues: 4, capacity: { withLaptop: 70, withoutLaptop: 30 } },
-    { date: 'Friday, 17 July', venues: 4, capacity: { withLaptop: 70, withoutLaptop: 30 } },
+    { date: 'Wednesday, 15 July', venues: 4, capacity: { withLaptop: 70, withoutLaptop: 30 } },
     { date: 'Friday, 24 July', venues: 4, capacity: { withLaptop: 70, withoutLaptop: 30 } },
     { date: 'Friday, 31 July', venues: 4, capacity: { withLaptop: 70, withoutLaptop: 30 } },
     { date: 'Friday, 14 August', venues: 4, capacity: { withLaptop: 70, withoutLaptop: 30 } },

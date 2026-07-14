@@ -55,9 +55,9 @@ const TEST_INFO = {
 };
 
 const COLORS = {
-  emerald: { bg: 'bg-emerald-50', icon: 'text-emerald-600', border: 'border-emerald-200', badge: 'bg-emerald-100 text-emerald-700' },
-  emerald: { bg: 'bg-emerald-50', icon: 'text-emerald-600', border: 'border-emerald-200', badge: 'bg-emerald-100 text-emerald-700' },
-  amber: { bg: 'bg-amber-50', icon: 'text-amber-600', border: 'border-amber-200', badge: 'bg-amber-100 text-amber-700' },
+  emerald: { bg: 'bg-ftm-red/[.12]', icon: 'text-ftm-red', border: 'border-ftm-red/30', badge: 'bg-ftm-slate/[.14] text-ftm-red' },
+  emerald: { bg: 'bg-ftm-red/[.12]', icon: 'text-ftm-red', border: 'border-ftm-red/30', badge: 'bg-ftm-slate/[.14] text-ftm-red' },
+  amber: { bg: 'bg-ftm-amber/10', icon: 'text-ftm-amber', border: 'border-ftm-amber/30', badge: 'bg-ftm-amber/[.14] text-ftm-amberdim' },
 };
 
 export default function PreTestInstructions({ testType, timeLimit, onBegin, sectionNumber, totalSections }) {
@@ -74,7 +74,7 @@ export default function PreTestInstructions({ testType, timeLimit, onBegin, sect
   const minutes = Math.floor(timeLimit / (60 * 1000));
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-ftm-night flex items-center justify-center p-4">
       <div className="max-w-lg w-full">
         <div className={`${colors.bg} rounded-2xl border ${colors.border} p-8 shadow-sm`}>
           {/* Section badge */}
@@ -82,7 +82,7 @@ export default function PreTestInstructions({ testType, timeLimit, onBegin, sect
             <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${colors.badge}`}>
               Section {sectionNumber} of {totalSections}
             </span>
-            <span className="text-sm text-gray-500 font-medium">
+            <span className="text-sm text-ftm-mut font-medium">
               {minutes} minutes
             </span>
           </div>
@@ -92,16 +92,16 @@ export default function PreTestInstructions({ testType, timeLimit, onBegin, sect
             <div className={`inline-flex items-center justify-center w-20 h-20 rounded-2xl ${colors.bg} ${colors.icon} mb-4 border ${colors.border}`}>
               {info.icon}
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">{info.title}</h1>
-            <p className="text-gray-600 text-lg">{info.description}</p>
+            <h1 className="text-3xl font-bold text-ftm-ink mb-2">{info.title}</h1>
+            <p className="text-ftm-mut text-lg">{info.description}</p>
           </div>
 
           {/* Tips */}
-          <div className="bg-white rounded-xl p-5 mb-6 border border-gray-100">
-            <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-3">Tips</h3>
+          <div className="bg-ftm-card rounded-xl p-5 mb-6 border border-white/[.07]">
+            <h3 className="text-sm font-semibold text-ftm-ink uppercase tracking-wider mb-3">Tips</h3>
             <ul className="space-y-2.5">
               {info.tips.map((tip, i) => (
-                <li key={i} className="flex items-start text-sm text-gray-600">
+                <li key={i} className="flex items-start text-sm text-ftm-mut">
                   <svg className={`w-4 h-4 ${colors.icon} mt-0.5 mr-2.5 flex-shrink-0`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
@@ -123,7 +123,7 @@ export default function PreTestInstructions({ testType, timeLimit, onBegin, sect
           </Button>
 
           {!isReady && (
-            <p className="text-center text-xs text-gray-400 mt-3">
+            <p className="text-center text-xs text-ftm-dim mt-3">
               Button will appear in a moment...
             </p>
           )}

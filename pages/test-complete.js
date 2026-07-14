@@ -43,10 +43,10 @@ export default function TestComplete() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center">
+      <div className="min-h-screen bg-ftm-night flex items-center justify-center">
         <Card className="p-8 text-center">
-          <div className="w-12 h-12 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-600 font-medium">Loading your results...</p>
+          <div className="w-12 h-12 border-2 border-ftm-red border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-ftm-mut font-medium">Loading your results...</p>
         </Card>
       </div>
     );
@@ -54,15 +54,15 @@ export default function TestComplete() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-ftm-night flex items-center justify-center p-4">
         <Card className="p-8 max-w-md w-full text-center">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="w-16 h-16 bg-ftm-red/[.14] rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-ftm-red" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.996-.833-2.767 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
             </svg>
           </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Error Loading Results</h2>
-          <p className="text-gray-600 mb-6">{error}</p>
+          <h2 className="text-xl font-bold text-ftm-ink mb-2">Error Loading Results</h2>
+          <p className="text-ftm-mut mb-6">{error}</p>
           <Button onClick={() => router.push('/home')} className="w-full">Return to Home</Button>
         </Card>
       </div>
@@ -103,33 +103,33 @@ export default function TestComplete() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 py-12 px-4">
+    <div className="min-h-screen bg-ftm-night py-12 px-4">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
           {allCompleted ? (
             <>
-              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-10 h-10 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="w-20 h-20 bg-ftm-green/[.14] rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-10 h-10 text-ftm-green" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">All Tests Complete</h1>
-              <p className="text-gray-600">Your results will be available after review.</p>
+              <h1 className="text-3xl font-bold text-ftm-ink mb-2">All Tests Complete</h1>
+              <p className="text-ftm-mut">Your results will be available after review.</p>
             </>
           ) : (
             <>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Test Progress</h1>
-              <p className="text-gray-600">{completedCount} of {testTypes.length} sections completed</p>
+              <h1 className="text-3xl font-bold text-ftm-ink mb-2">Test Progress</h1>
+              <p className="text-ftm-mut">{completedCount} of {testTypes.length} sections completed</p>
             </>
           )}
         </div>
 
         {/* Progress */}
         <div className="mb-8">
-          <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+          <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
             <div
-              className="h-2 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full transition-all duration-700"
+              className="h-2 bg-ftm-green rounded-full transition-all duration-700"
               style={{ width: `${(completedCount / testTypes.length) * 100}%` }}
             />
           </div>
@@ -146,18 +146,18 @@ export default function TestComplete() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                      status.status === 'completed' ? 'bg-green-100 text-green-600' :
-                      status.status === 'pending' ? 'bg-amber-100 text-amber-600' :
-                      'bg-gray-100 text-gray-400'
+                      status.status === 'completed' ? 'bg-ftm-green/[.14] text-ftm-green' :
+                      status.status === 'pending' ? 'bg-ftm-amber/[.14] text-ftm-amber' :
+                      'bg-ftm-slate/[.12] text-ftm-dim'
                     }`}>
                       <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         {TEST_ICONS[type]}
                       </svg>
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900 capitalize">{type} Test</h3>
+                      <h3 className="text-lg font-semibold text-ftm-ink capitalize">{type} Test</h3>
                       {testData?.submission_date && (
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-ftm-dim">
                           {new Date(testData.submission_date).toLocaleString()}
                         </p>
                       )}
@@ -167,22 +167,22 @@ export default function TestComplete() {
                 </div>
 
                 {status.status === 'completed' && testData?.score !== null && (
-                  <div className="mt-4 pt-3 border-t border-gray-100">
-                    <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                  <div className="mt-4 pt-3 border-t border-white/[.07]">
+                    <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
                       <div
-                        className="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full h-2 transition-all duration-700"
+                        className="bg-ftm-green rounded-full h-2 transition-all duration-700"
                         style={{ width: `${testData.total_points > 0 ? (testData.score / testData.total_points) * 100 : 0}%` }}
                       />
                     </div>
-                    <p className="text-sm text-gray-600 mt-1 text-right">
+                    <p className="text-sm text-ftm-mut mt-1 text-right">
                       {testData.score} / {testData.total_points} points
                     </p>
                   </div>
                 )}
 
                 {status.status === 'pending' && (
-                  <div className="mt-3 bg-amber-50 rounded-lg p-3">
-                    <p className="text-sm text-amber-700">Your writing is being reviewed. Results will be available soon.</p>
+                  <div className="mt-3 bg-ftm-amber/10 border border-ftm-amber/30 rounded-lg p-3">
+                    <p className="text-sm text-ftm-amberdim">Your writing is being reviewed. Results will be available soon.</p>
                   </div>
                 )}
               </Card>

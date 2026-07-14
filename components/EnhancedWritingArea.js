@@ -102,18 +102,18 @@ export default function EnhancedWritingArea({ value = '', onChange, wordLimit, p
   }, [text]);
 
   const saveIndicator = {
-    saved: { text: 'Saved', color: 'text-green-500' },
-    saving: { text: 'Saving...', color: 'text-amber-500' },
-    unsaved: { text: 'Unsaved changes', color: 'text-gray-400' },
+    saved: { text: 'Saved', color: 'text-ftm-green' },
+    saving: { text: 'Saving...', color: 'text-ftm-amber' },
+    unsaved: { text: 'Unsaved changes', color: 'text-ftm-dim' },
   };
 
   return (
-    <div className={`relative transition-all duration-500 ${isFocused ? 'ring-2 ring-emerald-200' : ''} rounded-xl overflow-hidden`}>
+    <div className={`relative transition-all duration-500 ${isFocused ? 'ring-2 ring-ftm-red/30' : ''} rounded-xl overflow-hidden`}>
       {/* Toolbar */}
-      <div className={`flex items-center justify-between px-4 py-2 bg-gray-50 border-b border-gray-200 transition-opacity duration-300 ${isFocused ? 'opacity-60 hover:opacity-100' : 'opacity-100'}`}>
+      <div className={`flex items-center justify-between px-4 py-2 bg-ftm-night border-b border-white/[.08] transition-opacity duration-300 ${isFocused ? 'opacity-60 hover:opacity-100' : 'opacity-100'}`}>
         <div className="flex items-center space-x-3">
           {/* Font selector */}
-          <div className="flex items-center space-x-1 bg-white rounded-lg border border-gray-200 p-0.5">
+          <div className="flex items-center space-x-1 bg-ftm-card rounded-lg border border-white/[.08] p-0.5">
             {FONT_OPTIONS.map((font) => (
               <button
                 key={font.key}
@@ -121,8 +121,8 @@ export default function EnhancedWritingArea({ value = '', onChange, wordLimit, p
                 onClick={() => setSelectedFont(font)}
                 className={`px-2.5 py-1 text-xs rounded-md transition-all ${
                   selectedFont.key === font.key
-                    ? 'bg-emerald-100 text-emerald-700 font-medium'
-                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                    ? 'bg-ftm-slate/[.14] text-ftm-red font-medium'
+                    : 'text-ftm-mut hover:text-ftm-slate hover:bg-ftm-night'
                 }`}
               >
                 {font.label}
@@ -131,7 +131,7 @@ export default function EnhancedWritingArea({ value = '', onChange, wordLimit, p
           </div>
 
           {/* Undo/Redo */}
-          <div className="flex items-center space-x-1 border-l border-gray-200 pl-3">
+          <div className="flex items-center space-x-1 border-l border-white/[.08] pl-3">
             <button
               type="button"
               onClick={() => {
@@ -143,7 +143,7 @@ export default function EnhancedWritingArea({ value = '', onChange, wordLimit, p
                 });
               }}
               disabled={undoStack.length === 0}
-              className="p-1 rounded text-gray-400 hover:text-gray-600 disabled:opacity-30"
+              className="p-1 rounded text-ftm-dim hover:text-ftm-mut disabled:opacity-30"
               title="Undo"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -161,7 +161,7 @@ export default function EnhancedWritingArea({ value = '', onChange, wordLimit, p
                 });
               }}
               disabled={redoStack.length === 0}
-              className="p-1 rounded text-gray-400 hover:text-gray-600 disabled:opacity-30"
+              className="p-1 rounded text-ftm-dim hover:text-ftm-mut disabled:opacity-30"
               title="Redo"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -174,7 +174,7 @@ export default function EnhancedWritingArea({ value = '', onChange, wordLimit, p
         {/* Save indicator */}
         <div className={`flex items-center space-x-1.5 text-xs ${saveIndicator[saveStatus].color}`}>
           {saveStatus === 'saving' && (
-            <div className="w-3 h-3 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+            <div className="w-3 h-3 border-2 border-ftm-amber/50 border-t-transparent rounded-full animate-spin" />
           )}
           {saveStatus === 'saved' && (
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -206,24 +206,24 @@ export default function EnhancedWritingArea({ value = '', onChange, wordLimit, p
         />
 
         {/* Subtle page edge effect */}
-        <div className="absolute top-0 left-0 w-px h-full bg-gradient-to-b from-transparent via-gray-200 to-transparent opacity-50" style={{ left: '2.5rem' }} />
+        <div className="absolute top-0 left-0 w-px h-full bg-gradient-to-b from-transparent via-white/10 to-transparent opacity-50" style={{ left: '2.5rem' }} />
       </div>
 
       {/* Stats bar */}
-      <div className="flex items-center justify-between px-4 py-2.5 bg-gray-50 border-t border-gray-200 text-xs">
-        <div className="flex items-center space-x-4 text-gray-500">
+      <div className="flex items-center justify-between px-4 py-2.5 bg-ftm-night border-t border-white/[.08] text-xs">
+        <div className="flex items-center space-x-4 text-ftm-mut">
           <span>
-            <span className={`font-medium ${isOverLimit ? 'text-red-600' : 'text-gray-700'}`}>{wordCount}</span>
-            {wordLimit && <span className="text-gray-400"> / {wordLimit}</span>} words
+            <span className={`font-medium ${isOverLimit ? 'text-ftm-red' : 'text-ftm-slate'}`}>{wordCount}</span>
+            {wordLimit && <span className="text-ftm-dim"> / {wordLimit}</span>} words
           </span>
-          <span className="text-gray-300">|</span>
-          <span><span className="font-medium text-gray-700">{charCount}</span> characters</span>
-          <span className="text-gray-300">|</span>
-          <span><span className="font-medium text-gray-700">{paragraphCount}</span> paragraph{paragraphCount !== 1 ? 's' : ''}</span>
+          <span className="text-ftm-dim">|</span>
+          <span><span className="font-medium text-ftm-slate">{charCount}</span> characters</span>
+          <span className="text-ftm-dim">|</span>
+          <span><span className="font-medium text-ftm-slate">{paragraphCount}</span> paragraph{paragraphCount !== 1 ? 's' : ''}</span>
         </div>
 
         {isOverLimit && (
-          <span className="text-red-600 font-medium animate-pulse">
+          <span className="text-ftm-red font-medium animate-pulse">
             Over word limit by {wordCount - parseInt(wordLimit)}
           </span>
         )}

@@ -24,9 +24,9 @@ const nextConfig = {
             value: [
               "default-src 'self'",
               "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://vercel.live https://*.vercel.live",
-              "style-src 'self' 'unsafe-inline' https://vercel.live https://*.vercel.live",
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://vercel.live https://*.vercel.live",
               "img-src 'self' data: blob: https://vercel.live https://*.vercel.live https://vercel.com",
-              "font-src 'self' data: https://vercel.live https://*.vercel.live",
+              "font-src 'self' data: https://fonts.gstatic.com https://vercel.live https://*.vercel.live",
               "connect-src 'self' https://sheets.googleapis.com https://www.googleapis.com https://vercel.live https://*.vercel.live wss://*.vercel.live",
               "frame-src 'self' https://vercel.live https://*.vercel.live",
               "frame-ancestors 'none'",

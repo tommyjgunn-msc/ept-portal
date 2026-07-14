@@ -33,22 +33,22 @@ export default function SectionTransition({ completedSection, onContinue, isLast
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-ftm-night flex items-center justify-center p-4">
       <div className="max-w-md w-full text-center">
         {/* Success icon */}
         <div className="relative inline-block mb-6">
-          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-            <svg className="w-10 h-10 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="w-20 h-20 bg-ftm-green/[.14] rounded-full flex items-center justify-center mx-auto">
+            <svg className="w-10 h-10 text-ftm-green" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
         </div>
 
-        <h2 className="text-3xl font-bold text-gray-900 mb-3">{msg.complete}</h2>
-        <p className="text-gray-600 text-lg mb-8">{msg.encouragement}</p>
+        <h2 className="text-3xl font-bold text-ftm-ink mb-3">{msg.complete}</h2>
+        <p className="text-ftm-mut text-lg mb-8">{msg.encouragement}</p>
 
         {!isLastSection && (
-          <p className="text-sm text-gray-500 mb-4">
+          <p className="text-sm text-ftm-mut mb-4">
             Please wait for the instructor before proceeding.
           </p>
         )}

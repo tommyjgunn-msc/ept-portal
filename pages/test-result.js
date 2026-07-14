@@ -36,12 +36,12 @@ export default function TestResults() {
   if (error) return <div>Error: {error}</div>;
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-ftm-night py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
-        <div className="bg-white shadow rounded-lg overflow-hidden">
-          <div className="px-4 py-5 border-b border-gray-200 sm:px-6">
-            <h2 className="text-2xl font-bold text-gray-900">
-              Your EPT Results
+        <div className="bg-ftm-card border border-white/[.08] rounded-[10px] overflow-hidden">
+          <div className="px-4 py-5 border-b border-white/[.07] sm:px-6 bg-ftm-up">
+            <h2 className="font-grotesk text-2xl font-bold text-ftm-ink">
+              Your Futurimi results
             </h2>
           </div>
           
@@ -50,13 +50,13 @@ export default function TestResults() {
               {['reading', 'writing', 'listening'].map((type) => {
                 const testResult = results[type];
                 return (
-                  <div key={type} className="border-b pb-4 last:border-b-0">
+                  <div key={type} className="border-b border-white/[.07] pb-4 last:border-b-0">
                     <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-lg font-medium text-gray-900 capitalize">
+                      <h3 className="text-lg font-medium text-ftm-ink capitalize">
                         {type} Test
                       </h3>
                       {testResult && (
-                        <span className="text-sm text-gray-500">
+                        <span className="text-sm text-ftm-dim">
                           Attempt {testResult.submission_count}
                         </span>
                       )}
@@ -64,8 +64,8 @@ export default function TestResults() {
                     {testResult ? (
                       <div className="space-y-2">
                         <div className="flex justify-between">
-                          <span className="text-gray-600">Score:</span>
-                          <span className="font-medium">
+                          <span className="text-ftm-mut">Score:</span>
+                          <span className="font-medium text-ftm-ink">
                             {type === 'writing' 
                               ? 'Pending Review'
                               : `${testResult.score} / ${testResult.total_points}`
@@ -73,16 +73,16 @@ export default function TestResults() {
                           </span>
                         </div>
                         {type !== 'writing' && (
-                          <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div className="w-full bg-white/10 rounded-full h-2">
                             <div 
-                              className="bg-emerald-600 rounded-full h-2"
+                              className="bg-ftm-green rounded-full h-2"
                               style={{ 
                                 width: `${(testResult.score / testResult.total_points) * 100}%` 
                               }}
                             />
                           </div>
                         )}
-                        <div className="flex justify-between text-sm text-gray-500">
+                        <div className="flex justify-between text-sm text-ftm-dim">
                           <span>Completed:</span>
                           <span>
                             {new Date(testResult.submission_date).toLocaleString()}
@@ -90,7 +90,7 @@ export default function TestResults() {
                         </div>
                       </div>
                     ) : (
-                      <p className="text-gray-500">
+                      <p className="text-ftm-dim">
                         No results available
                       </p>
                     )}

@@ -1,15 +1,16 @@
 // components/Navigation.js
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useTestMode } from '@/context/TestModeContext';
+import { FuturimiWordmark, AluMark } from './Futurimi';
 
 const StatusBadge = ({ status, children, className = "" }) => {
   const baseClasses = "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium";
   const statusClasses = {
-    active: "bg-green-100 text-green-800",
-    pending: "bg-yellow-100 text-yellow-800",
-    inactive: "bg-gray-100 text-gray-800"
+    active: "bg-ftm-green/[.14] text-ftm-green",
+    pending: "bg-ftm-amber/[.14] text-ftm-amber",
+    inactive: "bg-ftm-slate/[.14] text-ftm-slate"
   };
   return (
     <span className={`${baseClasses} ${statusClasses[status]} ${className}`}>
@@ -19,15 +20,15 @@ const StatusBadge = ({ status, children, className = "" }) => {
 };
 
 const NavigationSkeleton = () => (
-  <nav className="bg-white shadow-sm border-b border-gray-200">
+  <nav className="bg-ftm-bar border-b border-white/[.08]">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="flex justify-between h-16">
         <div className="flex items-center">
-          <div className="h-8 w-32 bg-gray-200 rounded animate-pulse"></div>
+          <div className="h-6 w-32 bg-white/10 rounded animate-pulse"></div>
         </div>
         <div className="flex items-center space-x-4">
-          <div className="h-4 w-24 bg-gray-200 rounded animate-pulse"></div>
-          <div className="h-8 w-20 bg-gray-200 rounded animate-pulse"></div>
+          <div className="h-4 w-24 bg-white/10 rounded animate-pulse"></div>
+          <div className="h-8 w-20 bg-white/10 rounded animate-pulse"></div>
         </div>
       </div>
     </div>
@@ -166,25 +167,19 @@ export default function Navigation() {
   }
 
   return (
-    <nav className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
+    <nav className="bg-ftm-bar border-b border-white/[.08] sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
-            <Link href="/home" className="flex-shrink-0 flex items-center gap-2 group">
-              <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center">
-                <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                </svg>
-              </div>
-              <span className="text-xl font-bold text-gray-900 group-hover:text-emerald-700 transition-colors">
-                English Proficiency Test
-              </span>
+            <Link href="/home" className="flex-shrink-0 flex items-center gap-2.5 group">
+              <AluMark height={14} opacity={0.5} />
+              <FuturimiWordmark size={15} ink="#F3F0EA" diamond="#E0273F" />
             </Link>
 
             {isTestPortal && (
               <div className="ml-6 flex items-center space-x-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-sm font-medium text-gray-700">Test in Progress</span>
+                <div className="w-2 h-2 bg-ftm-green rounded-full animate-pulse"></div>
+                <span className="text-sm font-medium text-ftm-slate">Test in Progress</span>
               </div>
             )}
           </div>
@@ -193,11 +188,11 @@ export default function Navigation() {
             <div className="flex items-center space-x-4">
               <div className="hidden sm:flex items-center space-x-3">
                 <div className="text-right">
-                  <p className="text-sm font-medium text-gray-900">
+                  <p className="text-sm font-medium text-ftm-ink">
                     Welcome, {userData.name}
                   </p>
                   {bookingDetails?.selectedDate && (
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-ftm-dim">
                       Test: {bookingDetails.selectedDate}
                     </p>
                   )}
@@ -209,10 +204,10 @@ export default function Navigation() {
                   <Link
                     href="/test-portal"
                     className={`
-                      relative overflow-hidden px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105
+                      relative overflow-hidden px-4 py-2 rounded-md text-sm font-semibold transition-all duration-200
                       ${isTestActive
-                        ? 'text-white bg-emerald-600 hover:bg-emerald-700 shadow-lg'
-                        : 'text-gray-500 bg-gray-100 cursor-not-allowed'
+                        ? 'text-white bg-ftm-red hover:bg-[#C51F35] shadow-redglow'
+                        : 'text-ftm-dim bg-ftm-slate/[.12] cursor-not-allowed'
                       }
                     `}
                     onClick={e => !isTestActive && e.preventDefault()}
@@ -237,31 +232,31 @@ export default function Navigation() {
               <div className="relative user-menu">
                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="flex items-center p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors duration-200"
+                  className="flex items-center p-2 rounded-full text-ftm-dim hover:text-ftm-slate hover:bg-white/5 transition-colors duration-200"
                 >
-                  <div className="w-8 h-8 bg-emerald-600 rounded-full flex items-center justify-center">
-                    <span className="text-white text-sm font-medium">
+                  <div className="w-8 h-8 bg-ftm-slate/[.14] rounded-full flex items-center justify-center">
+                    <span className="text-ftm-slate text-sm font-bold font-grotesk">
                       {userData.name.charAt(0).toUpperCase()}
                     </span>
                   </div>
                 </button>
 
                 {userMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 z-50">
+                  <div className="absolute right-0 mt-2 w-48 bg-ftm-up rounded-lg shadow-lg border border-white/[.08] z-50">
                     <div className="py-1">
-                      <div className="px-4 py-2 border-b border-gray-100">
-                        <p className="text-sm font-medium text-gray-900">{userData.name}</p>
-                        <p className="text-xs text-gray-500">EPT ID: {userData.eptId}</p>
+                      <div className="px-4 py-2 border-b border-white/[.07]">
+                        <p className="text-sm font-medium text-ftm-ink">{userData.name}</p>
+                        <p className="text-xs text-ftm-dim">EPT ID: {userData.eptId}</p>
                       </div>
                       {bookingDetails && (
-                        <div className="px-4 py-2 border-b border-gray-100">
-                          <p className="text-xs text-gray-500">Test Date</p>
-                          <p className="text-sm font-medium">{bookingDetails.selectedDate}</p>
+                        <div className="px-4 py-2 border-b border-white/[.07]">
+                          <p className="text-xs text-ftm-dim">Test Date</p>
+                          <p className="text-sm font-medium text-ftm-ink">{bookingDetails.selectedDate}</p>
                         </div>
                       )}
                       <button
                         onClick={handleSignOut}
-                        className="w-full text-left px-4 py-2 text-sm text-red-700 hover:bg-red-50 transition-colors"
+                        className="w-full text-left px-4 py-2 text-sm text-ftm-red hover:bg-ftm-red/10 transition-colors"
                       >
                         Sign Out
                       </button>
@@ -275,12 +270,12 @@ export default function Navigation() {
       </div>
 
       {userData?.name && (
-        <div className="sm:hidden bg-gray-50 border-t border-gray-200 px-4 py-2">
+        <div className="sm:hidden bg-ftm-night border-t border-white/[.07] px-4 py-2">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-900">{userData.name}</p>
+              <p className="text-sm font-medium text-ftm-ink">{userData.name}</p>
               {bookingDetails?.selectedDate && (
-                <p className="text-xs text-gray-500">Test: {bookingDetails.selectedDate}</p>
+                <p className="text-xs text-ftm-dim">Test: {bookingDetails.selectedDate}</p>
               )}
             </div>
             {shouldShowTestLink && isTestActive && (

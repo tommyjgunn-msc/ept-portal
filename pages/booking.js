@@ -1,10 +1,16 @@
-// pages/booking.js — Enhanced booking flow with capacity display and error recovery
+// pages/booking.js — Futurimi booking flow (capacity display + error recovery preserved)
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { isWithinThreeWeeks, isFutureDate } from '../utils/dateUtils';
-import { Card, Button, FormField, Input, Alert, ProgressBar, Badge } from '../components/UIDesignSystem';
+import { Card, FormField, Input, Alert, Badge } from '../components/UIDesignSystem';
 import { LoadingButton } from '../components/LoadingStates';
 import { useToast } from '../components/ToastContext';
+
+// 'Friday, 05 June' -> { weekday: 'Fri', short: '05 June' }
+function splitDate(dateStr) {
+  const [weekday, rest] = String(dateStr).split(', ');
+  return { weekday: (weekday || '').slice(0, 3), short: rest || dateStr };
+}
 
 export default function Booking() {
   const [step, setStep] = useState(1);
@@ -126,15 +132,15 @@ export default function Booking() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-cyan-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-ftm-night flex items-center justify-center p-4">
         <Card className="w-full max-w-md p-8 text-center">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="w-16 h-16 bg-ftm-green/[.14] rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-ftm-green" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Registration Complete!</h2>
-          <p className="text-gray-600">Redirecting to your confirmation...</p>
+          <h2 className="font-grotesk text-2xl font-bold text-ftm-ink mb-2">Registration Complete!</h2>
+          <p className="text-ftm-mut">Redirecting to your confirmation&hellip;</p>
         </Card>
       </div>
     );
@@ -143,24 +149,24 @@ export default function Booking() {
   const steps = ['Personal Info', 'Laptop Setup', 'Select Date', 'Confirm'];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-cyan-50">
-      <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen bg-ftm-night">
+      <div className="container mx-auto px-4 py-10">
         <div className="max-w-2xl mx-auto">
-          <Card className="p-8">
-            <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Book Your Test</h1>
-              <p className="text-gray-600">Complete your registration to schedule your English proficiency test</p>
-            </div>
+          <div className="mb-7">
+            <h1 className="font-grotesk font-bold text-2xl text-ftm-ink mb-1">Book your Futurimi date</h1>
+            <p className="font-inter text-sm text-ftm-mut">All sessions run at ALU Kigali. Choose a date and time that works for you.</p>
+          </div>
 
+          <Card className="p-8" hover={false}>
             {/* Step indicator */}
             <div className="mb-8">
               <div className="flex items-center justify-between mb-3">
                 {steps.map((title, index) => (
                   <div key={index} className="flex items-center">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all ${
-                      step > index + 1 ? 'bg-green-500 text-white' :
-                      step === index + 1 ? 'bg-emerald-600 text-white shadow-md' :
-                      'bg-gray-200 text-gray-500'
+                      step > index + 1 ? 'bg-ftm-green/[.2] text-ftm-green' :
+                      step === index + 1 ? 'bg-ftm-red text-white shadow-redglow' :
+                      'bg-white/[.06] text-ftm-dim'
                     }`}>
                       {step > index + 1 ? (
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -172,7 +178,7 @@ export default function Booking() {
                     </div>
                     {index < steps.length - 1 && (
                       <div className={`hidden sm:block w-12 md:w-20 h-0.5 mx-2 transition-all ${
-                        step > index + 1 ? 'bg-green-500' : 'bg-gray-200'
+                        step > index + 1 ? 'bg-ftm-green/50' : 'bg-white/[.08]'
                       }`} />
                     )}
                   </div>
@@ -181,8 +187,8 @@ export default function Booking() {
               <div className="flex justify-between text-xs sm:text-sm">
                 {steps.map((title, index) => (
                   <span key={index} className={`${
-                    step === index + 1 ? 'text-emerald-600 font-semibold' :
-                    step > index + 1 ? 'text-green-600' : 'text-gray-400'
+                    step === index + 1 ? 'text-ftm-red font-semibold' :
+                    step > index + 1 ? 'text-ftm-green' : 'text-ftm-dim'
                   }`}>
                     {title}
                   </span>
@@ -235,21 +241,20 @@ export default function Booking() {
                   <FormField label="Will you bring your own laptop?" required helpText="Bringing your own is preferred. We can provide one if needed (limited availability).">
                     <div className="grid gap-3 sm:grid-cols-2">
                       {[
-                        { value: true, label: 'Yes, bringing mine', desc: 'I have my own laptop', icon: '💻' },
-                        { value: false, label: 'No, need one', desc: 'Please provide a laptop', icon: '🏢' },
+                        { value: true, label: 'Bringing own laptop', desc: 'I have my own laptop' },
+                        { value: false, label: 'Use provided laptop', desc: 'Please provide one for me' },
                       ].map((option) => (
                         <label
                           key={option.value.toString()}
-                          className={`flex flex-col items-center p-5 border-2 rounded-xl cursor-pointer transition-all ${
+                          className={`flex flex-col items-center p-5 border rounded-lg cursor-pointer transition-all ${
                             formData.hasLaptop === option.value
-                              ? 'border-emerald-500 bg-emerald-50 shadow-sm'
-                              : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                              ? 'border-ftm-red border-2 bg-ftm-red/[.12]'
+                              : 'border-white/[.08] bg-ftm-night hover:border-white/[.18]'
                           }`}
                         >
                           <input type="radio" name="hasLaptop" value={option.value} checked={formData.hasLaptop === option.value} onChange={() => updateFormData('hasLaptop', option.value)} className="sr-only" required />
-                          <span className="text-3xl mb-2">{option.icon}</span>
-                          <span className="font-medium text-gray-900 text-sm">{option.label}</span>
-                          <span className="text-xs text-gray-500 mt-0.5">{option.desc}</span>
+                          <span className={`font-inter font-semibold text-sm ${formData.hasLaptop === option.value ? 'text-ftm-ink' : 'text-ftm-slate'}`}>{option.label}</span>
+                          <span className="font-inter text-xs text-ftm-dim mt-0.5">{option.desc}</span>
                         </label>
                       ))}
                     </div>
@@ -257,51 +262,50 @@ export default function Booking() {
                 </div>
               )}
 
-              {/* Step 3 */}
+              {/* Step 3 — date grid */}
               {step === 3 && (
                 <div className="space-y-6">
                   <FormField label="Select Test Date" required helpText="Choose from available dates within the next three weeks">
-                    <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-96 overflow-y-auto custom-scrollbar pr-1">
                       {regularDates
                         .filter(dateObj => isDateVisible(dateObj.date))
                         .map((dateObj) => {
                           const spots = getAvailableSpots(dateObj.date, formData.hasLaptop);
-                          const totalRemaining = getTotalRemaining(dateObj.date);
                           const isAvailable = spots > 0;
-                          const fillPct = Math.min(100, ((100 - totalRemaining) / 100) * 100);
+                          const isSelected = formData.selectedDate === dateObj.date;
+                          const { weekday, short } = splitDate(dateObj.date);
 
                           return (
                             <label
                               key={dateObj.date}
-                              className={`block p-4 border-2 rounded-xl cursor-pointer transition-all ${
-                                !isAvailable ? 'border-gray-100 bg-gray-50 opacity-60 cursor-not-allowed' :
-                                formData.selectedDate === dateObj.date ? 'border-emerald-500 bg-emerald-50 shadow-sm' :
-                                'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                              className={`relative block p-4 rounded-lg cursor-pointer transition-all ${
+                                !isAvailable ? 'border border-white/[.05] bg-ftm-night opacity-50 cursor-not-allowed' :
+                                isSelected ? 'border-2 border-ftm-red bg-ftm-red/[.12] p-[15px]' :
+                                'border border-white/[.08] bg-ftm-card hover:border-white/[.18]'
                               }`}
                             >
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center">
-                                  <input type="radio" name="selectedDate" value={dateObj.date} checked={formData.selectedDate === dateObj.date} onChange={() => updateFormData('selectedDate', dateObj.date)} disabled={!isAvailable} className="h-4 w-4 text-emerald-600 border-gray-300" required />
-                                  <div className="ml-3">
-                                    <div className={`font-medium ${isAvailable ? 'text-gray-900' : 'text-gray-400'}`}>{dateObj.date}</div>
-                                    <div className="text-xs text-gray-500">{dateObj.venues} venues</div>
-                                  </div>
-                                </div>
-                                <div className="text-right">
-                                  <Badge variant={isAvailable ? (spots < 10 ? 'warning' : 'success') : 'default'} size="sm">
-                                    {isAvailable ? `${spots} spots` : 'Full'}
-                                  </Badge>
-                                </div>
-                              </div>
-                              {/* Fill indicator */}
-                              <div className="mt-2 w-full bg-gray-200 rounded-full h-1 overflow-hidden">
-                                <div
-                                  className={`h-1 rounded-full transition-all ${
-                                    fillPct > 80 ? 'bg-red-400' : fillPct > 50 ? 'bg-amber-400' : 'bg-green-400'
-                                  }`}
-                                  style={{ width: `${fillPct}%` }}
-                                />
-                              </div>
+                              <input
+                                type="radio"
+                                name="selectedDate"
+                                value={dateObj.date}
+                                checked={isSelected}
+                                onChange={() => updateFormData('selectedDate', dateObj.date)}
+                                disabled={!isAvailable}
+                                className="sr-only"
+                                required
+                              />
+                              <span className={`font-inter font-medium text-[11px] uppercase ${isSelected ? 'text-ftm-redsoft' : 'text-ftm-dim'}`}>
+                                {weekday}
+                              </span>
+                              <div className="font-grotesk font-bold text-xl text-ftm-ink my-1">{short}</div>
+                              <span className={`font-inter font-medium text-xs ${isSelected ? 'text-[#F0B4BD]' : 'text-ftm-mut'}`}>
+                                {isAvailable ? `${spots} slots left` : 'Full'}
+                              </span>
+                              {isSelected && (
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E0273F" strokeWidth="2.2" className="absolute top-3 right-3">
+                                  <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                              )}
                             </label>
                           );
                         })}
@@ -310,27 +314,28 @@ export default function Booking() {
                 </div>
               )}
 
-              {/* Step 4 */}
+              {/* Step 4 — summary */}
               {step === 4 && (
                 <div className="space-y-6">
                   <Alert type="info" title="Please Review Your Information">
                     Confirm all details are correct before submitting.
                   </Alert>
-                  <div className="bg-gray-50 p-6 rounded-xl space-y-4">
-                    <h3 className="font-semibold text-gray-900">Registration Summary</h3>
+                  <div className="bg-ftm-night border border-white/[.08] p-6 rounded-lg space-y-4">
+                    <h3 className="font-grotesk font-semibold text-ftm-ink">Registration Summary</h3>
                     <div className="grid gap-3 text-sm">
                       {[
                         ['Name', formData.name],
                         ['Email', formData.email],
                         ['Test Date', formData.selectedDate],
+                        ['Time & Location', '10:00 AM · ALU Kigali'],
                       ].map(([label, val]) => (
                         <div key={label} className="flex justify-between">
-                          <span className="text-gray-600">{label}:</span>
-                          <span className="font-medium">{val}</span>
+                          <span className="text-ftm-mut">{label}:</span>
+                          <span className="font-medium text-ftm-ink">{val}</span>
                         </div>
                       ))}
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Laptop:</span>
+                        <span className="text-ftm-mut">Laptop:</span>
                         <Badge variant={formData.hasLaptop ? 'success' : 'default'} size="sm">
                           {formData.hasLaptop ? 'Bringing Own' : 'Using Provided'}
                         </Badge>
@@ -339,8 +344,8 @@ export default function Booking() {
                   </div>
                   <FormField>
                     <label className="flex items-start">
-                      <input type="checkbox" required className="h-4 w-4 text-emerald-600 border-gray-300 rounded mt-1" checked={formData.confirmedAttendance} onChange={(e) => updateFormData('confirmedAttendance', e.target.checked)} />
-                      <span className="ml-3 text-sm text-gray-900">
+                      <input type="checkbox" required className="h-4 w-4 accent-[#E0273F] mt-1" checked={formData.confirmedAttendance} onChange={(e) => updateFormData('confirmedAttendance', e.target.checked)} />
+                      <span className="ml-3 text-sm text-ftm-slate">
                         I confirm I will attend the test in person on the selected date and understand that missing the test may require rescheduling.
                       </span>
                     </label>
@@ -349,10 +354,15 @@ export default function Booking() {
               )}
 
               {/* Nav buttons */}
-              <div className="flex justify-between pt-6 border-t border-gray-100">
-                <Button type="button" variant="ghost" onClick={prevStep} disabled={step === 1} className={step === 1 ? 'invisible' : ''}>
+              <div className="flex justify-between pt-6 border-t border-white/[.07]">
+                <button
+                  type="button"
+                  onClick={prevStep}
+                  disabled={step === 1}
+                  className={`font-inter font-medium text-sm text-ftm-slate hover:text-ftm-ink px-4 py-2 rounded-md hover:bg-white/5 transition-colors ${step === 1 ? 'invisible' : ''}`}
+                >
                   Previous
-                </Button>
+                </button>
                 <LoadingButton
                   type="submit"
                   isLoading={isLoading}
@@ -363,7 +373,7 @@ export default function Booking() {
                     (step === 4 && !formData.confirmedAttendance)
                   }
                 >
-                  {step === 4 ? 'Complete Registration' : 'Next'}
+                  {step === 4 ? 'Confirm Booking' : 'Next'}
                 </LoadingButton>
               </div>
             </form>

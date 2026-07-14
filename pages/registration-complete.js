@@ -49,14 +49,14 @@ export default function RegistrationComplete() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-emerald-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-ftm-night py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-2xl mx-auto">
         {/* Success Animation Container */}
         <div className="text-center mb-8">
           <div className="relative inline-block">
             {/* Animated Success Icon */}
-            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
-              <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center">
+            <div className="w-20 h-20 bg-ftm-green/[.14] rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
+              <div className="w-16 h-16 bg-ftm-green rounded-full flex items-center justify-center">
                 <svg className="w-8 h-8 text-white animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -65,35 +65,35 @@ export default function RegistrationComplete() {
             
             {/* Celebration rings */}
             <div className="absolute inset-0 animate-ping">
-              <div className="w-20 h-20 border-4 border-green-200 rounded-full"></div>
+              <div className="w-20 h-20 border-4 border-ftm-green/30 rounded-full"></div>
             </div>
           </div>
 
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent mb-4">
-            Registration Complete! 🎉
+          <h1 className="font-grotesk text-4xl font-bold text-ftm-ink mb-4">
+            Registration complete
           </h1>
-          <p className="text-xl text-gray-600">
-            Thank you for registering for ALU's English Proficiency Test
+          <p className="text-xl text-ftm-mut">
+            Thank you for registering for Futurimi, ALU&rsquo;s English Proficiency Test
           </p>
         </div>
 
         {/* Main Registration Card */}
         <Card className="p-8 mb-6" elevation="xl">
           <div className="text-center mb-8">
-            <h2 className="text-2xl font-semibold text-gray-900 mb-4">
+            <h2 className="font-grotesk text-2xl font-semibold text-ftm-ink mb-4">
               Your Test is Scheduled
             </h2>
             
-            <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl p-6 mb-6">
+            <div className="bg-ftm-up border border-white/[.07] rounded-[10px] p-6 mb-6">
               <div className="flex items-center justify-center mb-4">
-                <svg className="w-8 h-8 text-emerald-600 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-8 h-8 text-ftm-slate mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3a4 4 0 118 0v4m-4 8a3 3 0 100-6 3 3 0 000 6z" />
                 </svg>
-                <p className="text-lg text-gray-700">Test Date & Time</p>
+                <p className="text-lg text-ftm-slate">Test Date & Time</p>
               </div>
               
               <div className="text-center">
-                <p className="text-3xl font-bold text-emerald-600 mb-2">
+                <p className="font-grotesk text-3xl font-bold text-ftm-ink mb-2">
                   {bookingDetails.selectedDate}
                 </p>
                 <Badge variant="primary" size="lg">
@@ -113,27 +113,27 @@ export default function RegistrationComplete() {
           </div>
 
           {/* Registration Details */}
-          <div className="bg-gray-50 rounded-lg p-6 mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Registration Details</h3>
+          <div className="bg-ftm-night border border-white/[.08] rounded-lg p-6 mb-6">
+            <h3 className="font-grotesk text-lg font-semibold text-ftm-ink mb-4">Registration Details</h3>
             
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <p className="text-sm text-gray-600">Name</p>
-                <p className="font-medium text-gray-900">{bookingDetails.name}</p>
+                <p className="text-sm text-ftm-mut">Name</p>
+                <p className="font-medium text-ftm-ink">{bookingDetails.name}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Email</p>
-                <p className="font-medium text-gray-900">{bookingDetails.email}</p>
+                <p className="text-sm text-ftm-mut">Email</p>
+                <p className="font-medium text-ftm-ink">{bookingDetails.email}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Equipment</p>
+                <p className="text-sm text-ftm-mut">Equipment</p>
                 <Badge variant={bookingDetails.hasLaptop ? 'success' : 'secondary'}>
                   {bookingDetails.hasLaptop ? 'Bringing Own Laptop' : 'Using Provided Laptop'}
                 </Badge>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Registration Date</p>
-                <p className="font-medium text-gray-900">
+                <p className="text-sm text-ftm-mut">Registration Date</p>
+                <p className="font-medium text-ftm-ink">
                   {new Date(bookingDetails.bookingDate).toLocaleDateString()}
                 </p>
               </div>
@@ -188,36 +188,36 @@ export default function RegistrationComplete() {
 
         {/* Additional Information */}
         <Card className="p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">What Happens Next?</h3>
+          <h3 className="font-grotesk text-lg font-semibold text-ftm-ink mb-4">What happens next?</h3>
           
           <div className="space-y-4">
             <div className="flex items-start">
-              <div className="flex-shrink-0 w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center mr-3">
-                <span className="text-sm font-semibold text-emerald-600">1</span>
+              <div className="flex-shrink-0 w-8 h-8 bg-ftm-slate/[.14] rounded-full flex items-center justify-center mr-3">
+                <span className="text-sm font-semibold text-ftm-slate">1</span>
               </div>
               <div>
-                <h4 className="font-medium text-gray-900">Confirmation Email</h4>
-                <p className="text-sm text-gray-600">You'll receive a confirmation email with all the details shortly.</p>
+                <h4 className="font-medium text-ftm-ink">Confirmation Email</h4>
+                <p className="text-sm text-ftm-mut">You'll receive a confirmation email with all the details shortly.</p>
               </div>
             </div>
             
             <div className="flex items-start">
-              <div className="flex-shrink-0 w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center mr-3">
-                <span className="text-sm font-semibold text-emerald-600">2</span>
+              <div className="flex-shrink-0 w-8 h-8 bg-ftm-slate/[.14] rounded-full flex items-center justify-center mr-3">
+                <span className="text-sm font-semibold text-ftm-slate">2</span>
               </div>
               <div>
-                <h4 className="font-medium text-gray-900">Test Day Access</h4>
-                <p className="text-sm text-gray-600">Return to this portal on your test date to access the test materials.</p>
+                <h4 className="font-medium text-ftm-ink">Test Day Access</h4>
+                <p className="text-sm text-ftm-mut">Return to this portal on your test date to access the test materials.</p>
               </div>
             </div>
             
             <div className="flex items-start">
-              <div className="flex-shrink-0 w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center mr-3">
-                <span className="text-sm font-semibold text-emerald-600">3</span>
+              <div className="flex-shrink-0 w-8 h-8 bg-ftm-slate/[.14] rounded-full flex items-center justify-center mr-3">
+                <span className="text-sm font-semibold text-ftm-slate">3</span>
               </div>
               <div>
-                <h4 className="font-medium text-gray-900">Results</h4>
-                <p className="text-sm text-gray-600">Your results will be available here after the test is completed and reviewed.</p>
+                <h4 className="font-medium text-ftm-ink">Results</h4>
+                <p className="text-sm text-ftm-mut">Your results will be available here after the test is completed and reviewed.</p>
               </div>
             </div>
           </div>

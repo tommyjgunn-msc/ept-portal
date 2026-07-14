@@ -98,17 +98,17 @@ function TimerDisplay({ timeRemaining, totalTime }) {
   const formatted = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
   const pct = totalTime ? (timeRemaining / totalTime) : 1;
 
-  let colorClass = 'text-gray-700';
-  let bgClass = 'bg-gray-100';
+  let colorClass = 'text-ftm-slate';
+  let bgClass = 'bg-white/[.06]';
   let extraClass = '';
 
   if (pct <= 0.10) {
-    colorClass = 'text-red-700';
-    bgClass = 'bg-red-50 border border-red-200';
+    colorClass = 'text-ftm-red';
+    bgClass = 'bg-ftm-red/10 border border-ftm-red/30';
     extraClass = 'animate-pulse text-lg';
   } else if (pct <= 0.25) {
-    colorClass = 'text-amber-700';
-    bgClass = 'bg-amber-50 border border-amber-200';
+    colorClass = 'text-ftm-amberdim';
+    bgClass = 'bg-ftm-amber/10 border border-ftm-amber/30';
   }
 
   return (
@@ -147,35 +147,35 @@ const MultipleChoiceTest = ({ content, onAnswer, responses, testType }) => {
   return (
     <div className="space-y-8">
       {/* Question progress */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+      <div className="bg-ftm-card rounded-lg shadow-sm border border-white/[.08] p-4">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-gray-700">
+          <span className="text-sm font-medium text-ftm-slate">
             {answeredCount} of {totalQuestions} questions answered
           </span>
-          <span className="text-sm text-gray-500">
+          <span className="text-sm text-ftm-mut">
             {totalQuestions - answeredCount} remaining
           </span>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+        <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
           <div
-            className="h-2 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full transition-all duration-500"
+            className="h-2 bg-ftm-red rounded-full transition-all duration-500"
             style={{ width: `${totalQuestions > 0 ? (answeredCount / totalQuestions) * 100 : 0}%` }}
           />
         </div>
       </div>
 
       {sections.map((section, sIndex) => (
-        <div key={sIndex} className="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
-          <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-            <h2 className="text-lg font-bold text-gray-900">{section.title}</h2>
+        <div key={sIndex} className="bg-ftm-card shadow-sm rounded-xl border border-white/[.08] overflow-hidden">
+          <div className="bg-ftm-night px-6 py-4 border-b border-white/[.08]">
+            <h2 className="text-lg font-bold text-ftm-ink">{section.title}</h2>
           </div>
           <div className="px-6 py-4">
-            <div className="prose max-w-none mb-6 text-gray-700 leading-relaxed">{section.content}</div>
+            <div className="prose max-w-none mb-6 text-ftm-slate leading-relaxed">{section.content}</div>
             <div className="space-y-6">
               {section.questions.map((question) => (
-                <div key={question.id} className="border-t border-gray-100 pt-5">
-                  <p className="font-medium text-gray-900 mb-3">
-                    <span className="text-emerald-600 mr-1">{question.number}.</span>
+                <div key={question.id} className="border-t border-white/[.07] pt-5">
+                  <p className="font-medium text-ftm-ink mb-3">
+                    <span className="text-ftm-red mr-1">{question.number}.</span>
                     {question.text}
                   </p>
                   <div className="space-y-2 ml-1">
@@ -184,8 +184,8 @@ const MultipleChoiceTest = ({ content, onAnswer, responses, testType }) => {
                         key={oIndex}
                         className={`flex items-center space-x-3 p-3 rounded-lg border cursor-pointer transition-all duration-200 ${
                           responses?.[question.id] === option
-                            ? 'border-emerald-300 bg-emerald-50 shadow-sm'
-                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                            ? 'border-ftm-red/40 bg-ftm-red/[.12] shadow-sm'
+                            : 'border-white/[.08] hover:border-white/[.16] hover:bg-ftm-night'
                         }`}
                       >
                         <input
@@ -194,9 +194,9 @@ const MultipleChoiceTest = ({ content, onAnswer, responses, testType }) => {
                           value={option}
                           checked={responses?.[question.id] === option}
                           onChange={() => onAnswer(question.id, option)}
-                          className="h-4 w-4 text-emerald-600 border-gray-300"
+                          className="h-4 w-4 text-ftm-red border-white/[.16]"
                         />
-                        <span className="text-sm text-gray-700">{option}</span>
+                        <span className="text-sm text-ftm-slate">{option}</span>
                       </label>
                     ))}
                   </div>
@@ -219,12 +219,12 @@ const WritingTest = ({ content, onAnswer, responses }) => {
       {content.map((prompt, index) => {
         const promptId = `prompt-${index}`;
         return (
-          <div key={index} className="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
-            <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-bold text-gray-900">{prompt[2]}</h2>
+          <div key={index} className="bg-ftm-card shadow-sm rounded-xl border border-white/[.08] overflow-hidden">
+            <div className="bg-ftm-night px-6 py-4 border-b border-white/[.08]">
+              <h2 className="text-lg font-bold text-ftm-ink">{prompt[2]}</h2>
             </div>
             <div className="px-6 py-4">
-              <div className="prose max-w-none mb-6 text-gray-700 leading-relaxed whitespace-pre-wrap">
+              <div className="prose max-w-none mb-6 text-ftm-slate leading-relaxed whitespace-pre-wrap">
                 {prompt[3]}
               </div>
               <EnhancedWritingArea
@@ -460,15 +460,15 @@ export default function TestPortalComponent() {
   // Error state
   if (error) {
     return (
-      <div className="fixed inset-0 bg-gray-50 flex items-center justify-center z-50">
-        <div className="max-w-md w-full bg-white shadow-lg rounded-2xl p-8 text-center">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <div className="fixed inset-0 bg-ftm-night flex items-center justify-center z-50">
+        <div className="max-w-md w-full bg-ftm-card shadow-lg rounded-2xl p-8 text-center">
+          <div className="w-16 h-16 bg-ftm-red/[.14] rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-ftm-red" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.996-.833-2.767 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Something went wrong</h2>
-          <p className="text-gray-600 mb-6">{error}</p>
+          <h2 className="text-2xl font-bold text-ftm-ink mb-2">Something went wrong</h2>
+          <p className="text-ftm-mut mb-6">{error}</p>
           <div className="flex space-x-3 justify-center">
             <Button variant="secondary" onClick={() => router.push('/home')}>Return Home</Button>
             <Button variant="primary" onClick={() => { setError(''); setShowInstructions(true); }}>Try Again</Button>
@@ -494,7 +494,7 @@ export default function TestPortalComponent() {
 
   return (
     <ProctoringWrapper onForcedSubmit={handleForcedSubmit}>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-ftm-night">
         {/* Submission confirmation overlay */}
         {showConfirmSubmit && (
           <SubmissionConfirmation
@@ -508,11 +508,11 @@ export default function TestPortalComponent() {
         )}
 
         {/* Header */}
-        <div className="bg-white shadow-sm border-b sticky top-0 z-30">
+        <div className="bg-ftm-card shadow-sm border-b sticky top-0 z-30">
           <div className="max-w-7xl mx-auto px-4 py-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <h1 className="text-xl font-bold text-gray-900">
+                <h1 className="text-xl font-bold text-ftm-ink">
                   {TEST_SEQUENCE[currentTest].charAt(0).toUpperCase() + TEST_SEQUENCE[currentTest].slice(1)} Test
                 </h1>
                 <Badge variant="primary" size="sm">

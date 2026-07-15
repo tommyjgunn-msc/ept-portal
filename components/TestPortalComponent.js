@@ -389,41 +389,67 @@ export default function TestPortalComponent() {
     }
   }, [currentTest, clearWarnings, stopProctoringCheck, toggleProctoring]);
 
-  // Submit
+  // Submit — network-resilient. The server dedupes by (test_id, student_id),
+  // so retries are safe and a 409 means the submission is already saved.
   const submitTest = useCallback(async () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
     setShowConfirmSubmit(false);
+
+    const finish = () => {
+      sessionStorage.removeItem(`test_responses_${TEST_SEQUENCE[currentTest]}`);
+      sessionStorage.removeItem(`test_time_${TEST_SEQUENCE[currentTest]}`);
+      setShowTransition(true);
+    };
 
     try {
       const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
       if (!userData.eptId || !testData?.test_id) throw new Error('Missing required data');
 
       const csrfToken = sessionStorage.getItem('csrfToken');
-      const response = await fetch('/api/submit-test', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(csrfToken && { 'X-CSRF-Token': csrfToken }),
-        },
-        body: JSON.stringify({
-          test_id: testData.test_id,
-          responses,
-          student_id: userData.eptId,
-          type: TEST_SEQUENCE[currentTest],
-          proctoring_data: getProctoringData(),
-          time_remaining: timeRemaining,
-          submission_time: new Date().toISOString(),
-        }),
+      const body = JSON.stringify({
+        test_id: testData.test_id,
+        responses,
+        student_id: userData.eptId,
+        type: TEST_SEQUENCE[currentTest],
+        proctoring_data: getProctoringData(),
+        time_remaining: timeRemaining,
+        submission_time: new Date().toISOString(),
       });
 
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.message || 'Submission failed');
+      const MAX_ATTEMPTS = 4;
+      for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 20000);
+        try {
+          const response = await fetch('/api/submit-test', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(csrfToken && { 'X-CSRF-Token': csrfToken }),
+            },
+            body,
+            signal: controller.signal,
+          });
 
-      sessionStorage.removeItem(`test_responses_${TEST_SEQUENCE[currentTest]}`);
-      sessionStorage.removeItem(`test_time_${TEST_SEQUENCE[currentTest]}`);
+          // 409 = already saved (e.g. a retry after a lost response) → treat as success.
+          if (response.status === 409) { finish(); return; }
 
-      setShowTransition(true);
+          const result = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(result.message || 'Submission failed');
+
+          finish();
+          return;
+        } catch (err) {
+          // Only retry transient network/timeout failures; surface real HTTP errors.
+          const transient = err.name === 'AbortError' || err.name === 'TypeError' ||
+            /failed to fetch|networkerror|load failed/i.test(err.message || '');
+          if (!transient || attempt === MAX_ATTEMPTS) throw err;
+          await new Promise(r => setTimeout(r, attempt * 1000)); // 1s, 2s, 3s backoff
+        } finally {
+          clearTimeout(timer);
+        }
+      }
     } catch (error) {
       setError(error.message || 'Submission failed. Please try again.');
     } finally {

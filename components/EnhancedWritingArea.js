@@ -195,7 +195,7 @@ export default function EnhancedWritingArea({ value = '', onChange, wordLimit, p
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           placeholder="Begin writing your response here..."
-          className="w-full min-h-[400px] p-8 md:p-12 bg-transparent border-0 resize-y focus:ring-0 focus:outline-none placeholder-gray-300"
+          className="w-full min-h-[400px] p-8 md:p-12 bg-transparent text-gray-900 border-0 resize-y focus:ring-0 focus:outline-none placeholder-gray-300"
           style={{
             fontFamily: selectedFont.value,
             fontSize: '1.05rem',

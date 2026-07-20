@@ -1,7 +1,7 @@
 // pages/booking.js — Futurimi booking flow (capacity display + error recovery preserved)
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { isWithinThreeWeeks, isFutureDate } from '../utils/dateUtils';
+import { isWithinThreeWeeks, isFutureDate, isDateVisibleISO } from '../utils/dateUtils';
 import { Card, FormField, Input, Alert, Badge } from '../components/UIDesignSystem';
 import { LoadingButton } from '../components/LoadingStates';
 import { useToast } from '../components/ToastContext';
@@ -73,7 +73,13 @@ export default function Booking() {
     return Math.max(0, 100 - booked.withLaptop - booked.withoutLaptop);
   };
 
-  const isDateVisible = (date) => isFutureDate(date) && isWithinThreeWeeks(date);
+  // Same rule as always: only dates from today to three weeks out are bookable.
+  // Prefer the real ISO date when the API supplies one (admin-managed dates);
+  // fall back to parsing the legacy yearless display string.
+  const isDateVisible = (dateObj) =>
+    dateObj?.date_iso
+      ? isDateVisibleISO(dateObj.date_iso)
+      : isFutureDate(dateObj.date) && isWithinThreeWeeks(dateObj.date);
 
   const updateFormData = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -108,7 +114,7 @@ export default function Booking() {
         // If capacity error, suggest next available date
         if (result.message?.includes('fully booked') || result.message?.includes('No more spaces')) {
           const nextAvailable = regularDates
-            .filter(d => isDateVisible(d.date) && d.date !== formData.selectedDate)
+            .filter(d => isDateVisible(d) && d.date !== formData.selectedDate)
             .find(d => getAvailableSpots(d.date, formData.hasLaptop) > 0);
 
           if (nextAvailable) {
@@ -268,7 +274,7 @@ export default function Booking() {
                   <FormField label="Select Test Date" required helpText="Choose from available dates within the next three weeks">
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-96 overflow-y-auto custom-scrollbar pr-1">
                       {regularDates
-                        .filter(dateObj => isDateVisible(dateObj.date))
+                        .filter(dateObj => isDateVisible(dateObj))
                         .map((dateObj) => {
                           const spots = getAvailableSpots(dateObj.date, formData.hasLaptop);
                           const isAvailable = spots > 0;

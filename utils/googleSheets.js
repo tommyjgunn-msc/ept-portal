@@ -133,6 +133,29 @@ export async function getBookingsCount() {
   }, {});
 }
 
+// Admin-managed bookable test dates. Written by admin-ept.
+// Columns: A id | B date_iso | C venues | D cap_with_laptop
+//          E cap_without_laptop | F status | G updated_by | H updated_at
+export async function getTestDates() {
+  const sheets = await getGoogleSheets();
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: process.env.GOOGLE_SHEET_ID,
+    range: 'TestDates!A2:H',
+  });
+
+  return (response.data.values || [])
+    .filter(row => row[1] && String(row[5] || 'published').trim() === 'published')
+    .map(row => ({
+      id: row[0] || '',
+      date_iso: String(row[1]).replace(/^'|'$/g, '').trim(),
+      venues: Number(row[2]) || 4,
+      capacity: {
+        withLaptop: Number(row[3]) || 0,
+        withoutLaptop: Number(row[4]) || 0,
+      },
+    }));
+}
+
 export async function getTestForDate(date) {
   const testDate = new Date(date);
   const dateString = `${testDate.getFullYear()}${String(testDate.getMonth() + 1).padStart(2, '0')}${String(testDate.getDate()).padStart(2, '0')}`;

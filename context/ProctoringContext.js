@@ -14,7 +14,9 @@ export function ProctoringProvider({ children, isActive = false }) {
   });
   const [multipleMonitorsDetected, setMultipleMonitorsDetected] = useState(false);
   const [focusEvents, setFocusEvents] = useState([]);
+  const [typingSamples, setTypingSamples] = useState([]);
   const [hasStartedTest, setHasStartedTest] = useState(false);
+  const lastTypingSampleRef = useRef({ t: 0, w: -1 });
   
   // Refs to track cleanup state
   const cleanupRef = useRef({ isCleanedUp: false });
@@ -23,6 +25,8 @@ export function ProctoringProvider({ children, isActive = false }) {
   
   const maxWarnings = 3;
   const MAX_FOCUS_EVENTS = 100; // Prevent unlimited memory growth
+  const MAX_TYPING_SAMPLES = 120; // ~30+ min of essay at one sample / 15s
+  const TYPING_SAMPLE_GAP_MS = 15 * 1000;
 
   // Cleanup function to remove all event listeners and timers
   const cleanup = useCallback(() => {
@@ -323,6 +327,25 @@ export function ProctoringProvider({ children, isActive = false }) {
     });
   }, [isProctoringActive, hasStartedTest, addEventListenerWithCleanup]);
 
+  // Typing cadence for the writing section: a {t, w} sample at most every 15s,
+  // giving a word-count growth curve. An essay that materialises in one or two
+  // giant jumps reads very differently from steady composition — this is the
+  // strongest external-drafting/dictation signal available without a camera.
+  // The admin proctoring report turns these into words-per-minute peaks.
+  const recordTypingSample = useCallback((wordCount) => {
+    if (!isProctoringActive || !hasStartedTest) return;
+    if (!Number.isFinite(wordCount) || wordCount < 0) return;
+
+    const now = Date.now();
+    if (now - lastTypingSampleRef.current.t < TYPING_SAMPLE_GAP_MS) return;
+    if (wordCount === lastTypingSampleRef.current.w) return; // idle — nothing new to record
+
+    lastTypingSampleRef.current = { t: now, w: wordCount };
+    setTypingSamples(prev =>
+      [...prev, { t: new Date(now).toISOString(), w: wordCount }].slice(-MAX_TYPING_SAMPLES)
+    );
+  }, [isProctoringActive, hasStartedTest]);
+
   // Memoized callbacks to prevent unnecessary re-renders
   const shouldForceSubmit = useCallback(() => {
     return (
@@ -333,13 +356,15 @@ export function ProctoringProvider({ children, isActive = false }) {
   }, [warnings, maxWarnings]);
 
   const clearWarnings = useCallback(() => {
-    setWarnings({ 
-      fullscreen: 0, 
-      windowFocus: 0, 
+    setWarnings({
+      fullscreen: 0,
+      windowFocus: 0,
       copyPaste: 0,
-      multipleMonitors: false 
+      multipleMonitors: false
     });
     setFocusEvents([]);
+    setTypingSamples([]);
+    lastTypingSampleRef.current = { t: 0, w: -1 };
   }, []);
 
   const toggleProctoring = useCallback((active) => {
@@ -368,12 +393,13 @@ export function ProctoringProvider({ children, isActive = false }) {
     return {
       warnings,
       focusEvents: focusEvents.slice(-50), // Only return recent events to reduce payload
+      typingSamples, // word-count growth curve for the writing section
       multipleMonitorsDetected,
       hasStartedTest,
       shouldForceSubmit: shouldForceSubmit(),
       timestamp: new Date().toISOString()
     };
-  }, [warnings, focusEvents, multipleMonitorsDetected, hasStartedTest, shouldForceSubmit]);
+  }, [warnings, focusEvents, typingSamples, multipleMonitorsDetected, hasStartedTest, shouldForceSubmit]);
 
   // Memoize context value to prevent unnecessary re-renders
   const contextValue = useMemo(() => ({
@@ -387,6 +413,7 @@ export function ProctoringProvider({ children, isActive = false }) {
     exitFullscreen,
     toggleProctoring,
     getProctoringData,
+    recordTypingSample,
     shouldForceSubmit,
     clearWarnings,
     startProctoringCheck,
@@ -402,6 +429,7 @@ export function ProctoringProvider({ children, isActive = false }) {
     exitFullscreen,
     toggleProctoring,
     getProctoringData,
+    recordTypingSample,
     shouldForceSubmit,
     clearWarnings,
     startProctoringCheck,

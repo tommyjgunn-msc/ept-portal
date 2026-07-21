@@ -244,7 +244,7 @@ const WritingTest = ({ content, onAnswer, responses }) => {
 // Main TestPortalComponent
 export default function TestPortalComponent() {
   const { getCurrentTime, getTimerSpeed } = useTestMode();
-  const { getProctoringData, clearWarnings, toggleProctoring, stopProctoringCheck } = useProctoring();
+  const { getProctoringData, recordTypingSample, clearWarnings, toggleProctoring, stopProctoringCheck } = useProctoring();
   const router = useRouter();
   const { debouncedSaveResponses, cleanup: cleanupStorage } = useOptimizedStorage();
 
@@ -287,7 +287,12 @@ export default function TestPortalComponent() {
       debouncedSaveResponses(TEST_SEQUENCE[currentTest], newResponses);
       return newResponses;
     });
-  }, [currentTest, debouncedSaveResponses]);
+    // Typing-cadence sample for the writing section (throttled inside the
+    // context). A student writes one prompt, so this response IS the essay.
+    if (TEST_SEQUENCE[currentTest] === 'writing' && typeof value === 'string') {
+      recordTypingSample(value.trim().split(/\s+/).filter(Boolean).length);
+    }
+  }, [currentTest, debouncedSaveResponses, recordTypingSample]);
 
   // Load test data
   useEffect(() => {

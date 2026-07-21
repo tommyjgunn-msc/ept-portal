@@ -124,51 +124,51 @@ export default function ProctoringWrapper({ children, onForcedSubmit }) {
       
       {/* Start Test Prompt */}
       {showStartPrompt && !sessionStorage.getItem('maintain_fullscreen') && (
-        <div className="fixed inset-0 bg-gray-900 bg-opacity-90 flex items-center justify-center z-50">
-          <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
-            <h2 className="text-2xl font-bold text-emerald-700 mb-4">Ready to Begin Your Test</h2>
-            <p className="mb-4">
+        <div className="fixed inset-0 bg-ftm-night/95 flex items-center justify-center z-50">
+          <div className="bg-ftm-card border border-white/[.08] p-8 rounded-lg shadow-lg max-w-md w-full">
+            <h2 className="font-grotesk text-2xl text-ftm-ink mb-4">Ready to Begin Your Test</h2>
+            <p className="mb-4 text-ftm-slate">
               This test requires fullscreen mode and will monitor for:
             </p>
-            <ul className="list-disc pl-6 mb-6 space-y-2 text-gray-700">
+            <ul className="list-disc pl-6 mb-6 space-y-2 text-ftm-slate">
               <li>Exiting fullscreen mode</li>
               <li>Switching to other applications</li>
               <li>Copy/paste attempts</li>
               <li>Use of multiple monitors</li>
             </ul>
-            <p className="mb-6 text-red-600 font-medium">
+            <p className="mb-6 text-ftm-red font-medium">
               Multiple violations will result in automatic test submission.
             </p>
             <button
               onClick={handleStartTest}
-              className="w-full bg-emerald-600 text-white py-3 px-4 rounded-md hover:bg-emerald-700 font-medium"
+              className="w-full bg-ftm-red text-white py-3 px-4 rounded-md hover:bg-ftm-red/90 font-medium"
             >
               Enter Fullscreen & Start Test
             </button>
           </div>
         </div>
       )}
-      
+
       {/* Warning Dialog */}
       {showWarning && (
-        <div className="fixed inset-0 bg-red-600 bg-opacity-95 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
-            <h2 className="text-xl font-bold text-red-600 mb-4">Warning</h2>
-            <p className="mb-4 text-gray-800">{warningMessage}</p>
-            
+        <div className="fixed inset-0 bg-ftm-red/95 flex items-center justify-center z-50">
+          <div className="bg-ftm-card border border-white/[.08] p-6 rounded-lg shadow-lg max-w-md w-full">
+            <h2 className="font-grotesk text-xl text-ftm-red mb-4">Warning</h2>
+            <p className="mb-4 text-ftm-slate">{warningMessage}</p>
+
             {countdownToSubmit !== null && (
-              <p className="font-bold text-2xl text-center my-4 text-red-600">
+              <p className="font-bold text-2xl text-center my-4 text-ftm-red">
                 Submitting in {countdownToSubmit} seconds
               </p>
             )}
-            
+
             {!isFullscreen && (
               <button
                 onClick={() => {
                   requestFullscreen();
                   setShowWarning(false);
                 }}
-                className="mt-4 w-full bg-emerald-600 text-white py-2 px-4 rounded-md hover:bg-emerald-700"
+                className="mt-4 w-full bg-ftm-red text-white py-2 px-4 rounded-md hover:bg-ftm-red/90"
               >
                 Return to Fullscreen
               </button>
@@ -176,22 +176,22 @@ export default function ProctoringWrapper({ children, onForcedSubmit }) {
           </div>
         </div>
       )}
-      
+
       {/* Status Indicator - only show after start prompt */}
       {!showStartPrompt && (
-        <div className="fixed top-0 right-0 p-2 bg-white rounded-bl-lg shadow z-40 text-xs flex items-center">
-          <span className={`inline-block w-2 h-2 rounded-full mr-1 ${isFullscreen ? 'bg-green-500' : 'bg-red-500'}`}></span>
+        <div className="fixed top-0 right-0 p-2 bg-ftm-card border-l border-b border-white/[.08] rounded-bl-lg shadow z-40 text-xs flex items-center text-ftm-slate">
+          <span className={`inline-block w-2 h-2 rounded-full mr-1 ${isFullscreen ? 'bg-ftm-green' : 'bg-ftm-red'}`}></span>
           <span>{isFullscreen ? 'Secure Mode' : 'Insecure'}</span>
         </div>
       )}
-      
+
       {/* Watermark Overlay - only show when proctoring is active */}
       {isProctoringActive && (
-        <div 
-          className="fixed inset-0 pointer-events-none z-30 opacity-5 flex items-center justify-center"
+        <div
+          className="fixed inset-0 pointer-events-none z-30 opacity-[.04] flex items-center justify-center"
           style={{ transform: 'rotate(-45deg)' }}
         >
-          <div className="text-6xl font-bold text-black whitespace-nowrap">
+          <div className="text-6xl font-bold text-white whitespace-nowrap">
             EPT TEST - SECURE MODE
           </div>
         </div>

@@ -3,6 +3,7 @@ import { getGoogleSheets } from '../../utils/googleSheets';
 import { calculateTestScore } from '../../utils/testScoring';
 import { withAuth } from '../../utils/withAuth';
 import { validateSubmission } from '../../utils/validation';
+import { RANGES } from '../../utils/sheetSchema';
 
 async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -21,7 +22,7 @@ async function handler(req, res) {
   // Check for duplicate submission
   const existingSubmissionResponse = await sheets.spreadsheets.values.get({
     spreadsheetId: process.env.GOOGLE_SHEET_ID,
-    range: 'Submissions!A2:G',
+    range: RANGES.SUBMISSIONS_PORTAL,
   });
 
   const existingSubmissions = existingSubmissionResponse.data.values || [];
@@ -36,7 +37,7 @@ async function handler(req, res) {
   if (type !== 'writing') {
     const questionsResponse = await sheets.spreadsheets.values.get({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
-      range: 'Questions!A2:I',
+      range: RANGES.QUESTIONS,
     });
 
     const testQuestions = (questionsResponse.data.values || []).filter(row => row[0] === test_id);
@@ -70,7 +71,7 @@ async function handler(req, res) {
 
   await sheets.spreadsheets.values.append({
     spreadsheetId: process.env.GOOGLE_SHEET_ID,
-    range: 'Submissions!A2:K',
+    range: RANGES.SUBMISSIONS_PORTAL,
     valueInputOption: 'RAW',
     insertDataOption: 'INSERT_ROWS',
     requestBody: { values: [submissionRow] },

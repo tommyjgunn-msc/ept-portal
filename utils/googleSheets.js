@@ -1,5 +1,6 @@
 // utils/googleSheets.js
 import { google } from 'googleapis';
+import { RANGES } from './sheetSchema';
 
 export async function getGoogleSheets() {
   const private_key = process.env.GOOGLE_PRIVATE_KEY
@@ -41,7 +42,7 @@ export async function verifyEptId(eptId) {
   const sheets = await getGoogleSheets();
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId: process.env.GOOGLE_SHEET_ID,
-    range: 'Auth!A2:C',
+    range: RANGES.AUTH,
   });
 
   const rows = response.data.values || [];
@@ -60,7 +61,7 @@ export async function getAvailableDates() {
   const sheets = await getGoogleSheets();
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId: process.env.GOOGLE_SHEET_ID,
-    range: 'Bookings!A2:E',
+    range: RANGES.BOOKINGS,
   });
 
   const bookings = response.data.values || [];
@@ -88,7 +89,7 @@ export async function createBooking(bookingData) {
   const sheets = await getGoogleSheets();
   const response = await sheets.spreadsheets.values.append({
     spreadsheetId: process.env.GOOGLE_SHEET_ID,
-    range: 'Bookings!A2:E',
+    range: RANGES.BOOKINGS,
     valueInputOption: 'RAW',
     insertDataOption: 'INSERT_ROWS',
     requestBody: {
@@ -113,7 +114,7 @@ export async function getBookingsCount() {
   const sheets = await getGoogleSheets();
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId: process.env.GOOGLE_SHEET_ID,
-    range: 'Bookings!A2:E',
+    range: RANGES.BOOKINGS,
   });
 
   const bookings = response.data.values || [];
@@ -140,7 +141,7 @@ export async function getTestDates() {
   const sheets = await getGoogleSheets();
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId: process.env.GOOGLE_SHEET_ID,
-    range: 'TestDates!A2:H',
+    range: RANGES.TEST_DATES,
   });
 
   return (response.data.values || [])
@@ -169,7 +170,7 @@ export async function getTestForDate(date) {
   const sheets = await getGoogleSheets();
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId: process.env.GOOGLE_SHEET_ID,
-    range: 'Tests!A2:G',
+    range: RANGES.TESTS,
   });
 
   const tests = response.data.values || [];

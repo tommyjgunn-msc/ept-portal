@@ -2,6 +2,7 @@
 import { getGoogleSheets } from '../../utils/googleSheets';
 import { withAuth } from '../../utils/withAuth';
 import { validateEptId } from '../../utils/validation';
+import { RANGES } from '../../utils/sheetSchema';
 
 async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -20,11 +21,11 @@ async function handler(req, res) {
   const [bookingsResponse, submissionsResponse] = await Promise.all([
     sheets.spreadsheets.values.get({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
-      range: 'Bookings!A2:E',
+      range: RANGES.BOOKINGS,
     }),
     sheets.spreadsheets.values.get({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
-      range: 'Submissions!A2:G',
+      range: RANGES.SUBMISSIONS_PORTAL,
     }),
   ]);
 

@@ -1,6 +1,7 @@
 // pages/api/test-delivery.js — Serve test questions (answers stripped)
 import { getGoogleSheets } from '../../utils/googleSheets';
 import { withAuth } from '../../utils/withAuth';
+import { RANGES } from '../../utils/sheetSchema';
 
 function convertDateFormat(bookingDate) {
   const cleanDate = bookingDate.replace(/^'|'$/g, '');
@@ -57,7 +58,7 @@ async function handler(req, res) {
 
   const sheets = await getGoogleSheets();
 
-  const ranges = ['Submissions!A2:G', 'Tests!A2:G', 'WritingPrompts!A2:E', 'Questions!A2:I'];
+  const ranges = [RANGES.SUBMISSIONS_PORTAL, RANGES.TESTS, RANGES.WRITING_PROMPTS, RANGES.QUESTIONS];
   const batchResponse = await sheets.spreadsheets.values.batchGet({
     spreadsheetId: process.env.GOOGLE_SHEET_ID,
     ranges,

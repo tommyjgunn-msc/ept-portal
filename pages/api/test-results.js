@@ -35,7 +35,13 @@ async function handler(req, res) {
   const results = {};
 
   for (const submission of userSubmissions) {
-    const [test_id, , score, completed, responses, submission_date, submission_count] = submission;
+    // Submissions column G holds the section type, not a submission count —
+    // the sheet's own header cell mislabels it "submission_count", and this
+    // code inherited that mistake. It used to destructure G as a count and
+    // compare parseInt('reading') > parseInt('reading'), which is NaN > NaN,
+    // i.e. always false: on a retake the FIRST attempt was kept and the page
+    // rendered "Attempt reading". Retakes now resolve by submission date.
+    const [test_id, , score, completed, responses, submission_date] = submission;
     const type = test_id.split('_')[0];
     const test = tests.find(row => row[0] === test_id);
 
@@ -50,15 +56,20 @@ async function handler(req, res) {
       parsedResponses = [];
     }
 
-    if (!results[type] || parseInt(submission_count) > parseInt(results[type].submission_count)) {
+    const isNewer = !results[type] ||
+      String(submission_date || '') >= String(results[type].submission_date || '');
+
+    if (isNewer) {
       results[type] = {
         score: parsedScore,
         total_points: parsedTotalPoints,
         completed: completed === 'true',
         submission_date,
-        submission_count,
+        attempts: (results[type]?.attempts || 0) + 1,
         responses: parsedResponses,
       };
+    } else if (results[type]) {
+      results[type].attempts += 1;
     }
   }
 

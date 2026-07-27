@@ -55,9 +55,9 @@ export default function TestResults() {
                       <h3 className="text-lg font-medium text-ftm-ink capitalize">
                         {type} Test
                       </h3>
-                      {testResult && (
+                      {testResult && testResult.attempts > 1 && (
                         <span className="text-sm text-ftm-dim">
-                          Attempt {testResult.submission_count}
+                          {testResult.attempts} attempts
                         </span>
                       )}
                     </div>

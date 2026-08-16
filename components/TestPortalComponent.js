@@ -89,7 +89,11 @@ const useOptimizedTimer = (initialTime, onTimeUp, testType, timerSpeed = 1) => {
   return { timeRemaining, setTimeRemaining };
 };
 
-// Timer display with progressive urgency
+// Timer. The old version pulsed and grew when under 10% remained — an
+// animated red clock in the corner of a candidate's eye for the last six
+// minutes of an exam. The anxiety research is explicit that clutter and
+// movement cost performance, so urgency is now carried by a word and a rule,
+// both of which survive being read aloud and neither of which moves.
 function TimerDisplay({ timeRemaining, totalTime }) {
   if (timeRemaining === null) return null;
 
@@ -98,25 +102,21 @@ function TimerDisplay({ timeRemaining, totalTime }) {
   const formatted = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
   const pct = totalTime ? (timeRemaining / totalTime) : 1;
 
-  let colorClass = 'text-ftm-slate';
-  let bgClass = 'bg-white/[.06]';
-  let extraClass = '';
-
-  if (pct <= 0.10) {
-    colorClass = 'text-ftm-red';
-    bgClass = 'bg-ftm-red/10 border border-ftm-red/30';
-    extraClass = 'animate-pulse text-lg';
-  } else if (pct <= 0.25) {
-    colorClass = 'text-ftm-amberdim';
-    bgClass = 'bg-ftm-amber/10 border border-ftm-amber/30';
-  }
+  const low = pct <= 0.10;
+  const warn = pct <= 0.25 && !low;
 
   return (
-    <div className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg transition-all duration-500 ${bgClass}`}>
-      <svg className={`w-4 h-4 ${colorClass}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-      <span className={`font-mono font-bold ${colorClass} ${extraClass}`}>{formatted}</span>
+    <div className={`flex items-baseline gap-3 border-l-[6px] pl-3 py-0.5
+      ${low ? 'border-ftm-crimson' : warn ? 'border-ftm-ochre' : 'border-ftm-line2'}`}>
+      <span className="font-inter font-bold text-[10px] tracking-[.14em] uppercase text-ftm-dim">
+        {low ? 'Nearly out of time' : warn ? 'Time left' : 'Time left'}
+      </span>
+      <time
+        className={`font-grotesk font-bold text-[19px] tabular-nums ${low ? 'text-ftm-ochre' : 'text-ftm-ink'}`}
+        aria-live={low ? 'polite' : 'off'}
+      >
+        {formatted}
+      </time>
     </div>
   );
 }
@@ -145,66 +145,68 @@ const MultipleChoiceTest = ({ content, onAnswer, responses, testType }) => {
   const answeredCount = Object.keys(responses || {}).length;
 
   return (
-    <div className="space-y-8">
-      {/* Question progress */}
-      <div className="bg-ftm-card rounded-lg shadow-sm border border-white/[.08] p-4">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-ftm-slate">
-            {answeredCount} of {totalQuestions} questions answered
+    <div className="space-y-14">
+      {/* Answered count. A count you can read beats a bar you have to estimate. */}
+      <p className="font-inter text-[14px] text-ftm-mut border-b border-ftm-line pb-3">
+        <span className="font-semibold text-ftm-ink tabular-nums">{answeredCount}</span> of{' '}
+        <span className="tabular-nums">{totalQuestions}</span> questions answered
+        {totalQuestions - answeredCount > 0 && (
+          <span className="text-ftm-dim">
+            {' '}&middot; <span className="tabular-nums">{totalQuestions - answeredCount}</span> to go
           </span>
-          <span className="text-sm text-ftm-mut">
-            {totalQuestions - answeredCount} remaining
-          </span>
-        </div>
-        <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
-          <div
-            className="h-2 bg-ftm-red rounded-full transition-all duration-500"
-            style={{ width: `${totalQuestions > 0 ? (answeredCount / totalQuestions) * 100 : 0}%` }}
-          />
-        </div>
-      </div>
+        )}
+      </p>
 
       {sections.map((section, sIndex) => (
-        <div key={sIndex} className="bg-ftm-card shadow-sm rounded-xl border border-white/[.08] overflow-hidden">
-          <div className="bg-ftm-night px-6 py-4 border-b border-white/[.08]">
-            <h2 className="text-lg font-bold text-ftm-ink">{section.title}</h2>
+        <section key={sIndex}>
+          <h2 className="font-grotesk font-bold text-[21px] text-ftm-ink pb-3 mb-6 border-b-2 border-ftm-line2">
+            {section.title}
+          </h2>
+
+          {/* The passage gets a reading measure and 17px type. It is the one
+              thing on this screen a candidate has to read closely. */}
+          <div className="font-inter text-[17px] leading-[1.7] text-ftm-ink max-w-measure mb-12 whitespace-pre-wrap">
+            {section.content}
           </div>
-          <div className="px-6 py-4">
-            <div className="prose max-w-none mb-6 text-ftm-slate leading-relaxed">{section.content}</div>
-            <div className="space-y-6">
-              {section.questions.map((question) => (
-                <div key={question.id} className="border-t border-white/[.07] pt-5">
-                  <p className="font-medium text-ftm-ink mb-3">
-                    <span className="text-ftm-red mr-1">{question.number}.</span>
+
+          <ol className="list-none p-0 m-0">
+            {section.questions.map((question) => (
+              <li key={question.id} className="border-t border-ftm-line py-7">
+                <fieldset>
+                  <legend className="font-inter font-semibold text-[16px] leading-relaxed text-ftm-ink mb-4 max-w-measure">
+                    <span className="text-ftm-dim tabular-nums mr-2">{question.number}.</span>
                     {question.text}
-                  </p>
-                  <div className="space-y-2 ml-1">
-                    {question.options.map((option, oIndex) => (
-                      <label
-                        key={oIndex}
-                        className={`flex items-center space-x-3 p-3 rounded-lg border cursor-pointer transition-all duration-200 ${
-                          responses?.[question.id] === option
-                            ? 'border-ftm-red/40 bg-ftm-red/[.12] shadow-sm'
-                            : 'border-white/[.08] hover:border-white/[.16] hover:bg-ftm-night'
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name={`q-${question.id}`}
-                          value={option}
-                          checked={responses?.[question.id] === option}
-                          onChange={() => onAnswer(question.id, option)}
-                          className="h-4 w-4 text-ftm-red border-white/[.16]"
-                        />
-                        <span className="text-sm text-ftm-slate">{option}</span>
-                      </label>
-                    ))}
+                  </legend>
+                  <div className="max-w-measure">
+                    {question.options.map((option, oIndex) => {
+                      const selected = responses?.[question.id] === option;
+                      return (
+                        <label
+                          key={oIndex}
+                          className="flex items-start gap-4 py-3 border-b border-ftm-line cursor-pointer group"
+                        >
+                          <input
+                            type="radio"
+                            name={`q-${question.id}`}
+                            value={option}
+                            checked={selected}
+                            onChange={() => onAnswer(question.id, option)}
+                            className="w-5 h-5 accent-[#C5132D] mt-0.5 flex-none"
+                          />
+                          <span className={`font-inter text-[16px] leading-relaxed transition-colors ${
+                            selected ? 'text-ftm-ink font-semibold' : 'text-ftm-mut group-hover:text-ftm-ink'
+                          }`}>
+                            {option}
+                          </span>
+                        </label>
+                      );
+                    })}
                   </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+                </fieldset>
+              </li>
+            ))}
+          </ol>
+        </section>
       ))}
     </div>
   );
@@ -215,26 +217,24 @@ const WritingTest = ({ content, onAnswer, responses }) => {
   if (!content || content.length === 0) return null;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-14">
       {content.map((prompt, index) => {
         const promptId = `prompt-${index}`;
         return (
-          <div key={index} className="bg-ftm-card shadow-sm rounded-xl border border-white/[.08] overflow-hidden">
-            <div className="bg-ftm-night px-6 py-4 border-b border-white/[.08]">
-              <h2 className="text-lg font-bold text-ftm-ink">{prompt[2]}</h2>
+          <section key={index}>
+            <h2 className="font-grotesk font-bold text-[21px] text-ftm-ink pb-3 mb-6 border-b-2 border-ftm-line2">
+              {prompt[2]}
+            </h2>
+            <div className="font-inter text-[17px] leading-[1.7] text-ftm-ink max-w-measure mb-8 whitespace-pre-wrap">
+              {prompt[3]}
             </div>
-            <div className="px-6 py-4">
-              <div className="prose max-w-none mb-6 text-ftm-slate leading-relaxed whitespace-pre-wrap">
-                {prompt[3]}
-              </div>
-              <EnhancedWritingArea
-                value={responses?.[promptId] || ''}
-                onChange={(text) => onAnswer(promptId, text)}
-                wordLimit={prompt[4]}
-                promptTitle={prompt[2]}
-              />
-            </div>
-          </div>
+            <EnhancedWritingArea
+              value={responses?.[promptId] || ''}
+              onChange={(text) => onAnswer(promptId, text)}
+              wordLimit={prompt[4]}
+              promptTitle={prompt[2]}
+            />
+          </section>
         );
       })}
     </div>
@@ -244,7 +244,7 @@ const WritingTest = ({ content, onAnswer, responses }) => {
 // Main TestPortalComponent
 export default function TestPortalComponent() {
   const { getCurrentTime, getTimerSpeed } = useTestMode();
-  const { getProctoringData, recordTypingSample, clearWarnings, toggleProctoring, stopProctoringCheck } = useProctoring();
+  const { getProctoringData, recordTypingSample, clearWarnings, toggleProctoring, stopProctoringCheck, isFullscreen } = useProctoring();
   const router = useRouter();
   const { debouncedSaveResponses, cleanup: cleanupStorage } = useOptimizedStorage();
 
@@ -491,18 +491,23 @@ export default function TestPortalComponent() {
   // Error state
   if (error) {
     return (
-      <div className="fixed inset-0 bg-ftm-night flex items-center justify-center z-50">
-        <div className="max-w-md w-full bg-ftm-card shadow-lg rounded-2xl p-8 text-center">
-          <div className="w-16 h-16 bg-ftm-red/[.14] rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-ftm-red" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.996-.833-2.767 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
-          </div>
-          <h2 className="text-2xl font-bold text-ftm-ink mb-2">Something went wrong</h2>
-          <p className="text-ftm-mut mb-6">{error}</p>
-          <div className="flex space-x-3 justify-center">
-            <Button variant="secondary" onClick={() => router.push('/home')}>Return Home</Button>
-            <Button variant="primary" onClick={() => { setError(''); setShowInstructions(true); }}>Try Again</Button>
+      <div className="fixed inset-0 bg-ftm-night flex items-center justify-center z-50 px-6">
+        <div className="w-full max-w-measure border-l-[6px] border-ftm-crimson pl-6 py-2" role="alert">
+          <h2 className="font-grotesk font-bold text-[26px] text-ftm-ink mb-2">
+            We could not load this section
+          </h2>
+          <p className="font-inter text-[16px] leading-relaxed text-ftm-mut mb-2">{error}</p>
+          <p className="font-inter text-[15px] leading-relaxed text-ftm-mut mb-7">
+            Nothing you have already submitted is affected. Try again, and tell an invigilator
+            if it happens twice.
+          </p>
+          <div className="flex flex-wrap items-center gap-6">
+            <Button variant="primary" onClick={() => { setError(''); setShowInstructions(true); }}>
+              Try again
+            </Button>
+            <Button variant="ghost" onClick={() => router.push('/home')}>
+              Back to my dashboard
+            </Button>
           </div>
         </div>
       </div>
@@ -511,6 +516,9 @@ export default function TestPortalComponent() {
 
   // Loading
   if (!testData) return <TestLoadingState testType={TEST_SEQUENCE[currentTest]} />;
+
+  const sectionName =
+    TEST_SEQUENCE[currentTest].charAt(0).toUpperCase() + TEST_SEQUENCE[currentTest].slice(1);
 
   // Get word counts for writing submission confirmation
   const getWordCounts = () => {
@@ -538,32 +546,45 @@ export default function TestPortalComponent() {
           />
         )}
 
-        {/* Header */}
-        <div className="bg-ftm-card shadow-sm border-b sticky top-0 z-30">
-          <div className="max-w-7xl mx-auto px-4 py-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <h1 className="text-xl font-bold text-ftm-ink">
-                  {TEST_SEQUENCE[currentTest].charAt(0).toUpperCase() + TEST_SEQUENCE[currentTest].slice(1)} Test
+        {/*
+          The status band. After the NYCTA Graphics Standards Manual: a fixed
+          thing appears in a fixed place, so a candidate under pressure never
+          hunts for it. It carries three facts and nothing else — which section,
+          where in the sequence, how long is left — and it never moves, resizes
+          or animates for the whole exam.
+        */}
+        <header className="bg-ftm-bar border-b border-ftm-line2 sticky top-0 z-30">
+          <div className="max-w-shell mx-auto px-6 sm:px-10">
+            <div className="flex items-center justify-between gap-6 h-bar">
+              <div className="flex items-baseline gap-4 min-w-0">
+                <h1 className="font-grotesk font-bold text-[19px] text-ftm-ink whitespace-nowrap">
+                  {sectionName}
                 </h1>
-                <Badge variant="primary" size="sm">
-                  {currentTest + 1} / {TEST_SEQUENCE.length}
-                </Badge>
+                <p className="font-inter text-[13px] text-ftm-mut whitespace-nowrap">
+                  Section <span className="tabular-nums">{currentTest + 1}</span> of{' '}
+                  <span className="tabular-nums">{TEST_SEQUENCE.length}</span>
+                </p>
               </div>
-              <TimerDisplay timeRemaining={timeRemaining} totalTime={TEST_TIME[TEST_SEQUENCE[currentTest]]} />
+              <div className="flex items-center gap-6">
+                {/* Fullscreen state lives in the band rather than floating in
+                    the corner over it. Colour plus a word, never colour alone. */}
+                <span className={`ftm-status font-semibold ${isFullscreen ? 'text-ftm-green' : 'text-ftm-ochre'}`}>
+                  {isFullscreen ? 'Fullscreen' : 'Not fullscreen'}
+                </span>
+                <TimerDisplay timeRemaining={timeRemaining} totalTime={TEST_TIME[TEST_SEQUENCE[currentTest]]} />
+              </div>
             </div>
-            <ProgressBar
-              value={currentTest + 1}
-              max={TEST_SEQUENCE.length}
-              variant="primary"
-              size="sm"
-              className="mt-2"
-            />
           </div>
-        </div>
+          {/* Sequence position, as three fixed segments rather than a sliding bar */}
+          <div className="flex gap-0.5" role="presentation">
+            {TEST_SEQUENCE.map((name, i) => (
+              <div key={name} className={`h-1 flex-1 ${i <= currentTest ? 'bg-ftm-crimson' : 'bg-ftm-up'}`} />
+            ))}
+          </div>
+        </header>
 
         {/* Test Content */}
-        <main className="max-w-5xl mx-auto py-6 px-4">
+        <main className="max-w-shell mx-auto px-6 sm:px-10 py-12">
           {(TEST_SEQUENCE[currentTest] === 'reading' || TEST_SEQUENCE[currentTest] === 'listening') && (
             <MultipleChoiceTest
               content={testData.content}
@@ -581,8 +602,11 @@ export default function TestPortalComponent() {
             />
           )}
 
-          {/* Submit button */}
-          <div className="mt-8 flex justify-end pb-8">
+          {/* Submit */}
+          <div className="mt-16 pt-8 border-t-2 border-ftm-line2 pb-8">
+            <p className="font-inter text-[14px] text-ftm-mut mb-4 max-w-measure">
+              You can submit this section once. After that you cannot reopen it.
+            </p>
             <Button
               onClick={() => setShowConfirmSubmit(true)}
               variant="primary"
@@ -590,7 +614,7 @@ export default function TestPortalComponent() {
               loading={isSubmitting}
               disabled={isSubmitting}
             >
-              Submit {TEST_SEQUENCE[currentTest].charAt(0).toUpperCase() + TEST_SEQUENCE[currentTest].slice(1)} Test
+              Submit the {sectionName.toLowerCase()} section
             </Button>
           </div>
         </main>

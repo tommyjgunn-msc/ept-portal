@@ -122,43 +122,64 @@ export default function ProctoringWrapper({ children, onForcedSubmit }) {
         }
       `}</style>
       
-      {/* Start Test Prompt */}
+      {/* Start prompt. The old copy said the test "will monitor for … use of
+          multiple monitors" as though that were a settled fact; the detector is
+          a width heuristic. Say what is actually recorded, and link the page
+          that lists all of it. */}
       {showStartPrompt && !sessionStorage.getItem('maintain_fullscreen') && (
-        <div className="fixed inset-0 bg-ftm-night/95 flex items-center justify-center z-50">
-          <div className="bg-ftm-card border border-white/[.08] p-8 rounded-lg shadow-lg max-w-md w-full">
-            <h2 className="font-grotesk text-2xl text-ftm-ink mb-4">Ready to Begin Your Test</h2>
-            <p className="mb-4 text-ftm-slate">
-              This test requires fullscreen mode and will monitor for:
+        <div className="fixed inset-0 bg-ftm-night flex items-center justify-center z-50 px-6">
+          <div className="w-full max-w-measure border-t-2 border-ftm-crimson pt-6">
+            <h2 className="font-grotesk font-bold text-[28px] text-ftm-ink mb-4">
+              This section is proctored
+            </h2>
+            <p className="font-inter text-[16px] leading-relaxed text-ftm-mut mb-4">
+              It runs in fullscreen. While it is open the portal records:
             </p>
-            <ul className="list-disc pl-6 mb-6 space-y-2 text-ftm-slate">
-              <li>Exiting fullscreen mode</li>
-              <li>Switching to other applications</li>
-              <li>Copy/paste attempts</li>
-              <li>Use of multiple monitors</li>
+            <ul className="list-none p-0 m-0 border-t border-ftm-line2 mb-6">
+              {[
+                'Leaving fullscreen.',
+                'Switching to another tab or application.',
+                'Attempts to copy, cut or paste, which are also blocked.',
+                'A guess at whether a second screen is attached.',
+              ].map((item) => (
+                <li key={item} className="font-inter text-[15px] text-ftm-mut py-2.5 border-b border-ftm-line">
+                  {item}
+                </li>
+              ))}
             </ul>
-            <p className="mb-6 text-ftm-red font-medium">
-              Multiple violations will result in automatic test submission.
+            <p className="font-inter text-[15px] leading-relaxed text-ftm-mut mb-8">
+              Three of any one of these submits the section automatically. There is no camera and
+              no screen recording.{' '}
+              <a href="/privacy" target="_blank" rel="noreferrer" className="text-ftm-ink underline underline-offset-4 hover:text-ftm-ochre transition-colors">
+                What the exam records
+              </a>
+              .
             </p>
             <button
               onClick={handleStartTest}
-              className="w-full bg-ftm-red text-white py-3 px-4 rounded-md hover:bg-ftm-red/90 font-medium"
+              className="font-inter font-bold text-[16px] text-white bg-ftm-crimson hover:bg-ftm-crimsondeep px-7 py-3.5 transition-colors"
             >
-              Enter Fullscreen & Start Test
+              Enter fullscreen and begin
             </button>
           </div>
         </div>
       )}
 
-      {/* Warning Dialog */}
+      {/* Warning. Was a full-screen crimson wash — the single most alarming
+          thing the product could do to someone mid-exam, for something as
+          ordinary as a dropped fullscreen. Now a plain panel on the page
+          ground; the severity is in the words. */}
       {showWarning && (
-        <div className="fixed inset-0 bg-ftm-red/95 flex items-center justify-center z-50">
-          <div className="bg-ftm-card border border-white/[.08] p-6 rounded-lg shadow-lg max-w-md w-full">
-            <h2 className="font-grotesk text-xl text-ftm-red mb-4">Warning</h2>
-            <p className="mb-4 text-ftm-slate">{warningMessage}</p>
+        <div className="fixed inset-0 bg-ftm-night/95 flex items-center justify-center z-50 px-6" role="alertdialog" aria-label="Proctoring warning">
+          <div className="w-full max-w-measure border-l-[6px] border-ftm-crimson bg-ftm-card px-6 py-6">
+            <h2 className="font-grotesk font-bold text-[21px] text-ftm-ink mb-3">
+              {countdownToSubmit !== null ? 'This section is about to be submitted' : 'Return to fullscreen'}
+            </h2>
+            <p className="font-inter text-[16px] leading-relaxed text-ftm-mut">{warningMessage}</p>
 
             {countdownToSubmit !== null && (
-              <p className="font-bold text-2xl text-center my-4 text-ftm-red">
-                Submitting in {countdownToSubmit} seconds
+              <p className="font-grotesk font-bold text-[34px] text-ftm-ochre tabular-nums my-5" aria-live="assertive">
+                {countdownToSubmit}s
               </p>
             )}
 
@@ -168,34 +189,23 @@ export default function ProctoringWrapper({ children, onForcedSubmit }) {
                   requestFullscreen();
                   setShowWarning(false);
                 }}
-                className="mt-4 w-full bg-ftm-red text-white py-2 px-4 rounded-md hover:bg-ftm-red/90"
+                className="mt-6 font-inter font-bold text-[15px] text-white bg-ftm-crimson hover:bg-ftm-crimsondeep px-6 py-3 transition-colors"
               >
-                Return to Fullscreen
+                Return to fullscreen
               </button>
             )}
           </div>
         </div>
       )}
 
-      {/* Status Indicator - only show after start prompt */}
-      {!showStartPrompt && (
-        <div className="fixed top-0 right-0 p-2 bg-ftm-card border-l border-b border-white/[.08] rounded-bl-lg shadow z-40 text-xs flex items-center text-ftm-slate">
-          <span className={`inline-block w-2 h-2 rounded-full mr-1 ${isFullscreen ? 'bg-ftm-green' : 'bg-ftm-red'}`}></span>
-          <span>{isFullscreen ? 'Secure Mode' : 'Insecure'}</span>
-        </div>
-      )}
+      {/* The fullscreen indicator used to be a chip pinned to the top-right
+          corner of the viewport, floating over the exam's own status band and
+          colliding with the timer on narrower screens. It now lives inside
+          that band (see TestPortalComponent) — one bar, fixed positions.
 
-      {/* Watermark Overlay - only show when proctoring is active */}
-      {isProctoringActive && (
-        <div
-          className="fixed inset-0 pointer-events-none z-30 opacity-[.04] flex items-center justify-center"
-          style={{ transform: 'rotate(-45deg)' }}
-        >
-          <div className="text-6xl font-bold text-white whitespace-nowrap">
-            EPT TEST - SECURE MODE
-          </div>
-        </div>
-      )}
+          The diagonal "EPT TEST - SECURE MODE" watermark is also gone. It
+          deterred nobody (a screenshot at 4% opacity is trivially readable),
+          and it sat over the passage a candidate had to read. */}
       
       {/* Main Content */}
       <div className="test-content">

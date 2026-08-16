@@ -103,26 +103,33 @@ export default function EnhancedWritingArea({ value = '', onChange, wordLimit, p
 
   const saveIndicator = {
     saved: { text: 'Saved', color: 'text-ftm-green' },
-    saving: { text: 'Saving...', color: 'text-ftm-amber' },
-    unsaved: { text: 'Unsaved changes', color: 'text-ftm-dim' },
+    saving: { text: 'Saving', color: 'text-ftm-mut' },
+    unsaved: { text: 'Not yet saved', color: 'text-ftm-dim' },
   };
 
+  // The writing surface stays paper on a dark page: a warm off-white sheet the
+  // candidate writes on, framed by the exam chrome. What went was the ornament
+  // around it — a focus glow, a rounded frame, a decorative gradient "page
+  // edge", a tick icon on the save state, a pulsing over-limit warning, and an
+  // indigo caret that was the only purple left in the product.
   return (
-    <div className={`relative transition-all duration-500 ${isFocused ? 'ring-2 ring-ftm-red/30' : ''} rounded-xl overflow-hidden`}>
-      {/* Toolbar */}
-      <div className={`flex items-center justify-between px-4 py-2 bg-ftm-night border-b border-white/[.08] transition-opacity duration-300 ${isFocused ? 'opacity-60 hover:opacity-100' : 'opacity-100'}`}>
-        <div className="flex items-center space-x-3">
-          {/* Font selector */}
-          <div className="flex items-center space-x-1 bg-ftm-card rounded-lg border border-white/[.08] p-0.5">
+    <div className="border border-ftm-line2">
+      {/* Toolbar. It no longer fades to 60% while you type — a control that
+          hides itself when you are using the thing it controls is a puzzle. */}
+      <div className="flex flex-wrap items-center justify-between gap-4 px-4 py-2.5 bg-ftm-bar border-b border-ftm-line">
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-1">
+            <span className="font-inter text-[11px] tracking-[.12em] uppercase text-ftm-dim mr-2">Typeface</span>
             {FONT_OPTIONS.map((font) => (
               <button
                 key={font.key}
                 type="button"
                 onClick={() => setSelectedFont(font)}
-                className={`px-2.5 py-1 text-xs rounded-md transition-all ${
+                aria-pressed={selectedFont.key === font.key}
+                className={`px-2.5 py-1 font-inter text-[12px] transition-colors ${
                   selectedFont.key === font.key
-                    ? 'bg-ftm-slate/[.14] text-ftm-red font-medium'
-                    : 'text-ftm-mut hover:text-ftm-slate hover:bg-ftm-night'
+                    ? 'bg-ftm-up text-ftm-ink font-semibold'
+                    : 'text-ftm-mut hover:text-ftm-ink'
                 }`}
               >
                 {font.label}
@@ -130,8 +137,7 @@ export default function EnhancedWritingArea({ value = '', onChange, wordLimit, p
             ))}
           </div>
 
-          {/* Undo/Redo */}
-          <div className="flex items-center space-x-1 border-l border-white/[.08] pl-3">
+          <div className="flex items-center gap-1 border-l border-ftm-line pl-5">
             <button
               type="button"
               onClick={() => {
@@ -143,12 +149,9 @@ export default function EnhancedWritingArea({ value = '', onChange, wordLimit, p
                 });
               }}
               disabled={undoStack.length === 0}
-              className="p-1 rounded text-ftm-dim hover:text-ftm-mut disabled:opacity-30"
-              title="Undo"
+              className="px-2.5 py-1 font-inter text-[12px] text-ftm-mut hover:text-ftm-ink disabled:opacity-30 disabled:hover:text-ftm-mut transition-colors"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-              </svg>
+              Undo
             </button>
             <button
               type="button"
@@ -161,71 +164,56 @@ export default function EnhancedWritingArea({ value = '', onChange, wordLimit, p
                 });
               }}
               disabled={redoStack.length === 0}
-              className="p-1 rounded text-ftm-dim hover:text-ftm-mut disabled:opacity-30"
-              title="Redo"
+              className="px-2.5 py-1 font-inter text-[12px] text-ftm-mut hover:text-ftm-ink disabled:opacity-30 disabled:hover:text-ftm-mut transition-colors"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 10H11a8 8 0 00-8 8v2m18-10l-6 6m6-6l-6-6" />
-              </svg>
+              Redo
             </button>
           </div>
         </div>
 
-        {/* Save indicator */}
-        <div className={`flex items-center space-x-1.5 text-xs ${saveIndicator[saveStatus].color}`}>
-          {saveStatus === 'saving' && (
-            <div className="w-3 h-3 border-2 border-ftm-amber/50 border-t-transparent rounded-full animate-spin" />
-          )}
-          {saveStatus === 'saved' && (
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-          )}
-          <span>{saveIndicator[saveStatus].text}</span>
-        </div>
+        <output className={`font-inter text-[12px] font-semibold ${saveIndicator[saveStatus].color}`}>
+          {saveIndicator[saveStatus].text}
+        </output>
       </div>
 
-      {/* Writing area */}
-      <div className="relative bg-[#FAFAF9]">
-        <textarea
-          ref={textareaRef}
-          value={text}
-          onChange={handleTextChange}
-          onKeyDown={handleKeyDown}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
-          placeholder="Begin writing your response here..."
-          className="w-full min-h-[400px] p-8 md:p-12 bg-transparent text-gray-900 border-0 resize-y focus:ring-0 focus:outline-none placeholder-gray-300"
-          style={{
-            fontFamily: selectedFont.value,
-            fontSize: '1.05rem',
-            lineHeight: '1.85',
-            letterSpacing: '0.01em',
-            caretColor: '#6366f1',
-          }}
-        />
+      {/* Writing surface */}
+      <textarea
+        ref={textareaRef}
+        value={text}
+        onChange={handleTextChange}
+        onKeyDown={handleKeyDown}
+        onFocus={() => setIsFocused(true)}
+        onBlur={() => setIsFocused(false)}
+        aria-label={promptTitle ? `Your essay: ${promptTitle}` : 'Your essay'}
+        placeholder="Start writing here."
+        className="block w-full min-h-[460px] px-8 py-10 md:px-14 md:py-12 border-0 resize-y
+                   bg-ftm-paper text-ftm-night placeholder-ftm-mutl focus:outline-none"
+        style={{
+          fontFamily: selectedFont.value,
+          fontSize: '17px',
+          lineHeight: '1.8',
+          caretColor: '#C5132D',
+          colorScheme: 'light',
+        }}
+      />
 
-        {/* Subtle page edge effect */}
-        <div className="absolute top-0 left-0 w-px h-full bg-gradient-to-b from-transparent via-white/10 to-transparent opacity-50" style={{ left: '2.5rem' }} />
-      </div>
-
-      {/* Stats bar */}
-      <div className="flex items-center justify-between px-4 py-2.5 bg-ftm-night border-t border-white/[.08] text-xs">
-        <div className="flex items-center space-x-4 text-ftm-mut">
-          <span>
-            <span className={`font-medium ${isOverLimit ? 'text-ftm-red' : 'text-ftm-slate'}`}>{wordCount}</span>
-            {wordLimit && <span className="text-ftm-dim"> / {wordLimit}</span>} words
+      {/* Counts. Tabular figures so the number does not jitter as you type. */}
+      <div className="flex flex-wrap items-center justify-between gap-4 px-4 py-2.5 bg-ftm-bar border-t border-ftm-line">
+        <p className="font-inter text-[12px] text-ftm-mut">
+          <span className={`font-semibold tabular-nums ${isOverLimit ? 'text-ftm-ochre' : 'text-ftm-ink'}`}>
+            {wordCount}
           </span>
-          <span className="text-ftm-dim">|</span>
-          <span><span className="font-medium text-ftm-slate">{charCount}</span> characters</span>
-          <span className="text-ftm-dim">|</span>
-          <span><span className="font-medium text-ftm-slate">{paragraphCount}</span> paragraph{paragraphCount !== 1 ? 's' : ''}</span>
-        </div>
+          {wordLimit && <span className="text-ftm-dim tabular-nums"> of {wordLimit}</span>} words
+          <span className="text-ftm-dim mx-2">&middot;</span>
+          <span className="tabular-nums">{charCount}</span> characters
+          <span className="text-ftm-dim mx-2">&middot;</span>
+          <span className="tabular-nums">{paragraphCount}</span> paragraph{paragraphCount !== 1 ? 's' : ''}
+        </p>
 
         {isOverLimit && (
-          <span className="text-ftm-red font-medium animate-pulse">
-            Over word limit by {wordCount - parseInt(wordLimit)}
-          </span>
+          <p className="font-inter text-[12px] font-semibold text-ftm-ochre">
+            <span className="tabular-nums">{wordCount - parseInt(wordLimit)}</span> words over the limit
+          </p>
         )}
       </div>
     </div>

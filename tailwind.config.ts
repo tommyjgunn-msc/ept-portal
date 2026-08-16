@@ -1,3 +1,15 @@
+// ⚠ MIRRORED CONFIG: the `theme` block below is byte-identical to the one in
+// admin-ept/tailwind.config.js (that copy is CommonJS, this one is TS — the
+// wrapper differs, the theme must not). Change both in the same sitting.
+//
+// Futurimi graphics standards. Three rules are enforced here rather than at the
+// call sites, so they cannot drift back in:
+//   1. every radius resolves to 2px (only `rounded-full` stays round, for the
+//      one spinner). `rounded-lg`, `rounded-xl` etc. are kept as aliases so old
+//      markup lands on the system instead of erroring.
+//   2. every shadow resolves to none. Depth comes from rules and value contrast.
+//   3. `transition-all` no longer includes transform or box-shadow, so a stray
+//      `hover:` cannot reintroduce a lift or a glow.
 import type { Config } from "tailwindcss";
 
 export default {
@@ -12,43 +24,97 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: "var(--background)",
-        foreground: "var(--foreground)",
-        // Futurimi design tokens (see design_handoff_futurimi_redesign)
         ftm: {
-          night: "#12171B", // dark page bg
-          card: "#1B2226", // dark card bg
-          up: "#20282D", // elevated card / header strip
-          bar: "#181F24", // top bar / gradient end
-          panel: "#20262B", // login left panel = light-theme ink
-          ink: "#F3F0EA", // dark-theme headings
-          paper: "#F4F1EC", // light page bg / login panel text
-          bodyl: "#4B565D", // light-theme body text
-          mutl: "#7C8790", // light-theme muted
-          mut: "#7E8B93", // dark-theme body/muted
-          dim: "#6E7A82", // dark-theme dimmer
-          dim2: "#8B979E",
-          link: "#C3CAD0",
-          crimson: "#C5132D", // light-theme red
-          crimsontint: "#FBE7E9",
-          red: "#E0273F", // dark-theme red
-          redsoft: "#F09AA6",
-          slatel: "#55636C", // light-theme slate
+          // Grounds — near-black, warmed very slightly off pure neutral.
+          night: "#14181B", // page ground
+          card: "#1B2024", // raised surface
+          up: "#232A2F", // header strip, hover ground
+          bar: "#181D21", // top bar
+          panel: "#20262B", // dark panel on a light page
+
+          // Paper — warm off-white. Never #FFFFFF.
+          paper: "#F4F1EC",
+          paper2: "#E7E2D8",
+
+          // Text on dark
+          ink: "#F4F1EC",
+          mut: "#A2ACB2",
+          dim: "#8A959B",
+          dim2: "#A2ACB2",
+          link: "#D6D1C8",
+
+          // Text on paper
+          bodyl: "#3F4A51",
+          mutl: "#6B767D",
+
+          // The single accent. Same hue on both grounds — no neon variant.
+          crimson: "#C5132D",
+          crimsondeep: "#97071E",
+          crimsontint: "#F7E3E6",
+
+          // Caution only. From the imigongo beige-yellow.
+          ochre: "#C8A96B",
+          ochretint: "#F2E9D6",
+
+          // Confirmation only.
+          green: "#58A47C",
+          greendeep: "#2F6B4A",
+
+          // Neutral slate
+          slate: "#93A4AE",
+          slatel: "#55636C",
           slateltint: "#EDF0F1",
-          slate: "#93A4AE", // dark-theme slate
-          green: "#48B27F",
-          amber: "#D9A441",
-          amberdim: "#C7A466",
-          indigo: "#8CA3F0", // Futurimi wordmark "imi"
+
+          // Hairlines
+          line: "rgba(244,241,236,.14)",
+          line2: "rgba(244,241,236,.30)",
+          linel: "rgba(20,24,27,.16)",
+          linel2: "rgba(20,24,27,.55)",
         },
       },
       fontFamily: {
         grotesk: ['"Space Grotesk"', "ui-sans-serif", "system-ui", "sans-serif"],
         inter: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
       },
-      boxShadow: {
-        redglow: "0 4px 18px rgba(224,39,63,.3)",
+      spacing: {
+        // 4px baseline. Named steps so a page reads in units, not pixels.
+        bar: "56px",
       },
+      maxWidth: {
+        measure: "68ch", // reading measure for prose and exam passages
+        shell: "1120px", // the one page width
+      },
+    },
+
+    // Overridden, not extended — these replace Tailwind's scales outright.
+    borderRadius: {
+      none: "0",
+      DEFAULT: "2px",
+      sm: "2px",
+      md: "2px",
+      lg: "2px",
+      xl: "2px",
+      "2xl": "2px",
+      "3xl": "2px",
+      full: "9999px",
+    },
+    boxShadow: {
+      none: "none",
+      DEFAULT: "none",
+      sm: "none",
+      md: "none",
+      lg: "none",
+      xl: "none",
+      "2xl": "none",
+      inner: "none",
+    },
+    transitionProperty: {
+      none: "none",
+      all: "color, background-color, border-color, text-decoration-color, fill, stroke, opacity",
+      DEFAULT: "color, background-color, border-color, opacity",
+      colors: "color, background-color, border-color, text-decoration-color, fill, stroke",
+      opacity: "opacity",
+      transform: "transform",
     },
   },
   plugins: [],

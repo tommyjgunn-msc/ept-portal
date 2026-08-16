@@ -1,46 +1,37 @@
-// pages/login.js — Futurimi paper login: dark hero panel + white form panel
-import { useState } from 'react';
+// pages/login.js — Futurimi sign-in.
+//
+// This used to be a split screen: a dark panel carrying a rotating WebGL
+// particle globe over a radial glow, beside a pure-white form panel. Three
+// separate problems in one layout — the orb, the dot cloud, and #FFFFFF.
+//
+// It is now a single measured column on warm paper, in the GOV.UK manner: one
+// question per screen, a large label, a large target, and an error summary at
+// the top that moves focus to the field that failed. The only ornament is the
+// imigongo register along the top edge.
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { useToast } from '../components/ToastContext';
-import { FuturimiWordmark, FuturimiHero, AluMark } from '../components/Futurimi';
+import { FuturimiWordmark, FuturimiRegister, AluMark } from '../components/Futurimi';
+import PaperFooter from '../components/PaperFooter';
 
 const SUPPORT_EMAIL = 'thewritingcentre@alueducation.com';
-
-function HeroPanel() {
-  return (
-    <div className="flex flex-col bg-ftm-panel p-9 h-full">
-      <AluMark height={13} opacity={0.55} className="self-start" />
-      <div
-        className="w-full h-[230px] my-5 rounded-lg overflow-hidden"
-        style={{ background: 'radial-gradient(circle at 50% 45%, rgba(197,19,45,.10), transparent 65%)' }}
-      >
-        <FuturimiHero
-          variant="globe"
-          secondaryHex="#55636C"
-          accentHex="#C5132D"
-          count={190}
-          cameraZ={8.2}
-          glyphs={['U', 'R', 'I', 'M', 'I']}
-        />
-      </div>
-      <div className="mt-1 mb-3">
-        <FuturimiWordmark size={40} ink="#F4F1EC" diamond="#C5132D" />
-      </div>
-      <p className="font-inter font-semibold text-[15px] text-ftm-paper mb-2.5">Test Your Proficiency.</p>
-      <p className="font-inter text-[13px] leading-relaxed text-[#8E979C] max-w-[300px] mb-auto">
-        Futurimi is ALU&rsquo;s English Proficiency Test. One exam, three sections, a result recognized across every program.
-      </p>
-      <p className="font-inter font-medium text-xs text-[#6C767C] mt-6">African Leadership University &middot; Kigali</p>
-    </div>
-  );
-}
 
 export default function Login() {
   const [eptId, setEptId] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const inputRef = useRef(null);
+  const errorRef = useRef(null);
   const router = useRouter();
   const { addToast } = useToast();
+
+  const fail = (message) => {
+    setError(message);
+    addToast({ type: 'error', title: 'Sign-in failed', message });
+    // Move focus to the summary so a screen reader announces it and a keyboard
+    // user lands on the link back to the field.
+    requestAnimationFrame(() => errorRef.current?.focus());
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -56,7 +47,7 @@ export default function Login() {
       const authData = await authResponse.json();
 
       if (!authResponse.ok) {
-        throw new Error(authData.message || 'Authentication failed');
+        throw new Error(authData.message || 'We could not match that EPT ID.');
       }
 
       sessionStorage.setItem('userData', JSON.stringify({
@@ -68,8 +59,8 @@ export default function Login() {
 
       addToast({
         type: 'success',
-        title: 'Login Successful',
-        message: `Welcome back, ${authData.name}!`
+        title: 'Signed in',
+        message: `Welcome back, ${authData.name}.`,
       });
 
       const bookingResponse = await fetch('/api/check-registration', {
@@ -84,121 +75,159 @@ export default function Login() {
 
       if (bookingData.hasRegistration) {
         sessionStorage.setItem('bookingDetails', JSON.stringify(bookingData.registration));
-        if (bookingData.hasCompletedTests) {
-          router.push('/test-complete');
-        } else {
-          router.push('/home');
-        }
+        router.push(bookingData.hasCompletedTests ? '/test-complete' : '/home');
       } else {
         router.push('/booking');
       }
-    } catch (error) {
-      setError(error.message || 'Failed to authenticate');
-      addToast({
-        type: 'error',
-        title: 'Login Failed',
-        message: error.message || 'Please check your EPT ID and try again.'
-      });
+    } catch (err) {
+      fail(err.message || 'We could not sign you in. Check your connection and try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex bg-ftm-paper">
-      {/* Left panel — Futurimi hero (desktop) */}
-      <div className="hidden lg:block w-[440px] flex-none">
-        <HeroPanel />
-      </div>
+    <div className="on-paper min-h-screen flex flex-col bg-ftm-paper text-ftm-panel">
+      <FuturimiRegister tone="paper" tall />
 
-      {/* Right panel — form */}
-      <div className="flex-1 flex flex-col bg-white">
-        {/* Mobile header — compact dark hero */}
-        <div className="lg:hidden bg-ftm-panel px-6 pt-6 pb-7 text-center">
-          <div className="flex justify-center mb-2">
-            <FuturimiWordmark size={30} ink="#F4F1EC" diamond="#C5132D" />
-          </div>
-          <p className="font-inter font-semibold text-sm text-ftm-paper">Test Your Proficiency.</p>
-          <p className="font-inter font-medium text-[11px] text-[#6C767C] mt-2">African Leadership University &middot; Kigali</p>
-        </div>
+      <header className="w-full max-w-shell mx-auto px-6 sm:px-10 pt-8 flex items-center justify-between">
+        <FuturimiWordmark size={26} ink="#20262B" diamond="#C5132D" />
+        <AluMark height={17} opacity={0.85} tone="paper" />
+      </header>
 
-        <div className="flex-1 flex items-center justify-center px-6 py-12 lg:px-[60px]">
-          <div className="w-full max-w-md">
-            <span className="font-inter font-bold text-[11px] tracking-[.1em] text-ftm-slatel uppercase">Welcome back</span>
-            <h1 className="font-grotesk font-semibold text-[26px] text-ftm-panel mt-2.5 mb-1.5">Sign in to Futurimi</h1>
-            <p className="font-inter text-sm text-ftm-mutl mb-8">Use the ID sent to your student email.</p>
+      <main className="flex-1 w-full max-w-shell mx-auto px-6 sm:px-10 py-12 sm:py-20
+                       grid grid-cols-1 lg:grid-cols-[minmax(0,540px)_minmax(0,1fr)] gap-16">
+        <div>
+          <p className="font-inter font-bold text-[11px] tracking-[.16em] uppercase text-ftm-slatel">
+            English Proficiency Test &middot; ALU Kigali
+          </p>
+          <h1 className="font-grotesk font-bold text-[34px] sm:text-[42px] leading-[1.05] tracking-[-.02em] text-ftm-panel mt-4 mb-4">
+            Sign in to Futurimi
+          </h1>
+          <p className="font-inter text-[17px] leading-relaxed text-ftm-bodyl mb-10 max-w-measure">
+            One exam, three sections, a result recognised across every programme.
+            Sign in with the EPT ID sent to your student email.
+          </p>
 
-            {/* Error alert */}
-            {error && (
-              <div className="mb-6 bg-ftm-crimsontint border border-ftm-crimson/25 rounded-md p-4 flex items-start gap-3">
-                <svg className="w-5 h-5 text-ftm-crimson mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.996-.833-2.767 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                </svg>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-ftm-crimson">Authentication Error</p>
-                  <p className="text-sm text-ftm-bodyl mt-0.5">{error}</p>
-                </div>
-                <button onClick={() => setError('')} className="text-ftm-crimson/60 hover:text-ftm-crimson">
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            )}
-
-            {/* Login form */}
-            <form onSubmit={handleSubmit}>
-              <label htmlFor="eptId" className="block font-inter font-semibold text-xs text-ftm-bodyl mb-1.5">
-                EPT ID
-              </label>
-              <input
-                id="eptId"
-                type="text"
-                placeholder="e.g., EPT-2026-04471"
-                value={eptId}
-                onChange={(e) => setEptId(e.target.value)}
-                required
-                autoFocus
-                className="block w-full font-inter text-sm text-ftm-panel placeholder-ftm-mutl/70 bg-white border border-ftm-panel/[.16] rounded-md px-3.5 py-3 mb-[26px] focus:outline-none focus:border-ftm-crimson focus:ring-1 focus:ring-ftm-crimson transition-colors"
-              />
-
+          {error && (
+            <div
+              ref={errorRef}
+              tabIndex={-1}
+              role="alert"
+              className="border-l-[6px] border-ftm-crimson bg-ftm-crimsontint px-5 py-4 mb-10"
+            >
+              <h2 className="font-grotesk font-bold text-[15px] text-ftm-crimson mb-1">
+                There is a problem
+              </h2>
               <button
-                type="submit"
-                disabled={isLoading || !eptId.trim()}
-                className={`w-full flex items-center justify-center gap-2 font-inter font-semibold text-sm text-white rounded-md px-5 py-3.5 transition-colors ${
-                  isLoading || !eptId.trim()
-                    ? 'bg-ftm-mutl/40 cursor-not-allowed'
-                    : 'bg-ftm-crimson hover:bg-[#A80F26]'
-                }`}
+                type="button"
+                onClick={() => inputRef.current?.focus()}
+                className="font-inter text-[15px] text-ftm-panel underline underline-offset-4 text-left"
               >
-                {isLoading ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Signing in&hellip;
-                  </>
-                ) : (
-                  'Continue'
-                )}
+                {error}
               </button>
-            </form>
-
-            <div className="flex justify-between mt-[18px]">
-              <a
-                href={`mailto:${SUPPORT_EMAIL}?subject=Forgot my EPT ID`}
-                className="font-inter font-medium text-[12.5px] text-ftm-crimson hover:underline"
-              >
-                Forgot your ID?
-              </a>
-              <a
-                href={`mailto:${SUPPORT_EMAIL}`}
-                className="font-inter font-medium text-[12.5px] text-ftm-slatel hover:underline"
-              >
-                Contact support
-              </a>
             </div>
+          )}
+
+          <form onSubmit={handleSubmit} noValidate>
+            <label htmlFor="eptId" className="block font-inter font-bold text-[17px] text-ftm-panel mb-1">
+              EPT ID
+            </label>
+            <p id="eptId-hint" className="font-inter text-[15px] text-ftm-mutl mb-3">
+              It looks like EPT-2026-04471.
+            </p>
+            <input
+              id="eptId"
+              ref={inputRef}
+              type="text"
+              inputMode="text"
+              autoComplete="off"
+              spellCheck="false"
+              aria-describedby="eptId-hint"
+              aria-invalid={error ? 'true' : 'false'}
+              value={eptId}
+              onChange={(e) => setEptId(e.target.value)}
+              required
+              autoFocus
+              data-figure
+              className={`block w-full max-w-[380px] font-inter text-[19px] tracking-[.01em] text-ftm-panel
+                bg-white border-2 px-4 py-3 mb-8 transition-colors
+                ${error ? 'border-ftm-crimson' : 'border-ftm-linel2 focus:border-ftm-panel'}`}
+            />
+
+            <button
+              type="submit"
+              disabled={isLoading || !eptId.trim()}
+              className={`inline-flex items-center justify-center gap-3 font-inter font-bold text-[17px] text-white
+                px-8 py-4 transition-colors
+                ${isLoading || !eptId.trim()
+                  ? 'bg-ftm-mutl cursor-not-allowed'
+                  : 'bg-ftm-crimson hover:bg-ftm-crimsondeep'}`}
+            >
+              {isLoading && (
+                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" aria-hidden="true" />
+              )}
+              {isLoading ? 'Signing in' : 'Continue'}
+            </button>
+          </form>
+
+          <div className="flex flex-wrap gap-x-8 gap-y-2 mt-10 pt-6 border-t border-ftm-linel">
+            <a
+              href={`mailto:${SUPPORT_EMAIL}?subject=Forgot my EPT ID`}
+              className="font-inter text-[15px] text-ftm-crimson underline underline-offset-4 hover:text-ftm-crimsondeep transition-colors"
+            >
+              I have forgotten my EPT ID
+            </a>
+            <a
+              href={`mailto:${SUPPORT_EMAIL}`}
+              className="font-inter text-[15px] text-ftm-bodyl underline underline-offset-4 hover:text-ftm-panel transition-colors"
+            >
+              Contact the Writing Centre
+            </a>
           </div>
         </div>
-      </div>
+
+        {/*
+          The one intervention the exam-anxiety research actually names is being
+          able to familiarise yourself with the platform beforehand. So the
+          space beside the form carries the shape of the exam rather than
+          decoration. It replaces the WebGL globe that stood here.
+        */}
+        <aside className="hidden lg:block max-w-[380px] lg:justify-self-end">
+          <h2 className="font-inter font-bold text-[11px] tracking-[.16em] uppercase text-ftm-slatel mb-4">
+            What the exam involves
+          </h2>
+          <table className="w-full font-inter text-[14px] border-collapse">
+            <tbody>
+              {[
+                ['Reading', '60 min', 'Comprehension passages, multiple choice'],
+                ['Writing', '45 min', 'One essay, written in the room'],
+                ['Listening', '30 min', 'Audio comprehension with questions'],
+              ].map(([name, length, what]) => (
+                <tr key={name}>
+                  <th scope="row" className="text-left align-top py-3 pr-4 border-b border-ftm-linel font-semibold text-ftm-panel whitespace-nowrap">
+                    {name}
+                  </th>
+                  <td className="align-top py-3 pr-4 border-b border-ftm-linel text-ftm-bodyl">{what}</td>
+                  <td className="align-top py-3 border-b border-ftm-linel text-right text-ftm-panel tabular-nums whitespace-nowrap">
+                    {length}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="font-inter text-[14px] leading-relaxed text-ftm-mutl mt-5">
+            Sittings run at ALU Kigali and open at 10:00 on the day you booked. The exam
+            runs in fullscreen and records tab switches.{' '}
+            <a href="/privacy" className="text-ftm-crimson underline underline-offset-4 hover:text-ftm-crimsondeep transition-colors">
+              What the exam records
+            </a>
+            .
+          </p>
+        </aside>
+      </main>
+
+      <PaperFooter />
     </div>
   );
 }

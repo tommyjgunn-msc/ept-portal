@@ -1,34 +1,36 @@
 // components/Navigation.js
+//
+// The top bar carries the imigongo register on its top edge — the one place a
+// page announces itself. Status is a square swatch plus a word, never a tinted
+// pill and never colour on its own.
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useTestMode } from '@/context/TestModeContext';
-import { FuturimiWordmark, AluMark } from './Futurimi';
+import { FuturimiWordmark, FuturimiRegister, AluMark } from './Futurimi';
 
 const StatusBadge = ({ status, children, className = "" }) => {
-  const baseClasses = "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium";
   const statusClasses = {
-    active: "bg-ftm-green/[.14] text-ftm-green",
-    pending: "bg-ftm-amber/[.14] text-ftm-amber",
-    inactive: "bg-ftm-slate/[.14] text-ftm-slate"
+    active: "text-ftm-green",
+    pending: "text-ftm-ochre",
+    inactive: "text-ftm-slate"
   };
   return (
-    <span className={`${baseClasses} ${statusClasses[status]} ${className}`}>
+    <span className={`ftm-status font-semibold ${statusClasses[status]} ${className}`}>
       {children}
     </span>
   );
 };
 
 const NavigationSkeleton = () => (
-  <nav className="bg-ftm-bar border-b border-white/[.08]">
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="flex justify-between h-16">
-        <div className="flex items-center">
-          <div className="h-6 w-32 bg-white/10 rounded animate-pulse"></div>
-        </div>
-        <div className="flex items-center space-x-4">
-          <div className="h-4 w-24 bg-white/10 rounded animate-pulse"></div>
-          <div className="h-8 w-20 bg-white/10 rounded animate-pulse"></div>
+  <nav className="bg-ftm-bar border-b border-ftm-line">
+    <FuturimiRegister />
+    <div className="max-w-shell mx-auto px-6 sm:px-10">
+      <div className="flex justify-between items-center h-bar" aria-busy="true">
+        <div className="ftm-skeleton h-5 w-32" />
+        <div className="flex items-center gap-4">
+          <div className="ftm-skeleton h-3.5 w-24" />
+          <div className="ftm-skeleton h-8 w-8" />
         </div>
       </div>
     </div>
@@ -159,108 +161,97 @@ export default function Navigation() {
   const shouldShowTestLink = useMemo(() => isHomePage && bookingDetails, [isHomePage, bookingDetails]);
   const isTestActive = testTimeCalculation.isTestActive;
 
-  if (isLoading && !isLoginPage) return <NavigationSkeleton />;
-
-  // No separate navigation on login — the login page handles its own header
-  if (isLoginPage) {
+  // Login and the exam both own their whole screen. The exam in particular has
+  // its own status band; stacking the app nav above it gave a candidate two
+  // header bars, a "welcome" greeting and a sign-out link at the exact moment
+  // they should be looking at one passage and nothing else.
+  if (isLoginPage || isTestPortal) {
     return null;
   }
 
+  if (isLoading) return <NavigationSkeleton />;
+
   return (
-    <nav className="bg-ftm-bar border-b border-white/[.08] sticky top-0 z-40">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <div className="flex items-center">
-            <Link href="/home" className="flex-shrink-0 flex items-center gap-2.5 group">
+    <nav className="bg-ftm-bar border-b border-ftm-line sticky top-0 z-40">
+      <FuturimiRegister />
+      <div className="max-w-shell mx-auto px-6 sm:px-10">
+        <div className="flex justify-between items-center h-bar gap-6">
+          <div className="flex items-center gap-6 min-w-0">
+            <Link href="/home" className="flex-shrink-0 flex items-center gap-3">
               <AluMark height={14} opacity={0.5} />
-              <FuturimiWordmark size={15} ink="#F3F0EA" diamond="#E0273F" />
+              <FuturimiWordmark size={15} ink="#F4F1EC" diamond="#C5132D" />
             </Link>
 
             {isTestPortal && (
-              <div className="ml-6 flex items-center space-x-2">
-                <div className="w-2 h-2 bg-ftm-green rounded-full animate-pulse"></div>
-                <span className="text-sm font-medium text-ftm-slate">Test in Progress</span>
-              </div>
+              <StatusBadge status="active">Test in progress</StatusBadge>
             )}
           </div>
 
           {userData?.name && (
-            <div className="flex items-center space-x-4">
-              <div className="hidden sm:flex items-center space-x-3">
-                <div className="text-right">
-                  <p className="text-sm font-medium text-ftm-ink">
-                    Welcome, {userData.name}
+            <div className="flex items-center gap-5">
+              <div className="hidden sm:block text-right">
+                <p className="font-inter text-[13px] font-semibold text-ftm-ink leading-tight">
+                  {userData.name}
+                </p>
+                {bookingDetails?.selectedDate && (
+                  <p className="font-inter text-[12px] text-ftm-dim leading-tight mt-0.5">
+                    {bookingDetails.selectedDate}
                   </p>
-                  {bookingDetails?.selectedDate && (
-                    <p className="text-xs text-ftm-dim">
-                      Test: {bookingDetails.selectedDate}
-                    </p>
-                  )}
-                </div>
+                )}
               </div>
 
               {shouldShowTestLink && (
-                <div className="relative">
-                  <Link
-                    href="/test-portal"
-                    className={`
-                      relative overflow-hidden px-4 py-2 rounded-md text-sm font-semibold transition-all duration-200
-                      ${isTestActive
-                        ? 'text-white bg-ftm-red hover:bg-[#C51F35] shadow-redglow'
-                        : 'text-ftm-dim bg-ftm-slate/[.12] cursor-not-allowed'
-                      }
-                    `}
-                    onClick={e => !isTestActive && e.preventDefault()}
-                  >
-                    <span className="relative">
-                      {isTestActive ? (
-                        <>
-                          <span className="inline-block w-2 h-2 bg-white rounded-full mr-2 animate-pulse"></span>
-                          Access Test
-                        </>
-                      ) : (
-                        `Test: ${bookingDetails.selectedDate}`
-                      )}
-                    </span>
-                  </Link>
-                  {isTestActive && (
-                    <StatusBadge status="active" className="absolute -top-2 -right-2">Live</StatusBadge>
-                  )}
-                </div>
+                <Link
+                  href="/test-portal"
+                  aria-disabled={!isTestActive}
+                  className={`font-inter text-[13px] font-bold px-4 py-2.5 transition-colors
+                    ${isTestActive
+                      ? 'text-white bg-ftm-crimson hover:bg-ftm-crimsondeep'
+                      : 'text-ftm-dim border border-ftm-line cursor-not-allowed'
+                    }`}
+                  onClick={e => !isTestActive && e.preventDefault()}
+                >
+                  {isTestActive ? 'Open the test' : `Opens ${bookingDetails.selectedDate}`}
+                </Link>
               )}
 
               <div className="relative user-menu">
                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="flex items-center p-2 rounded-full text-ftm-dim hover:text-ftm-slate hover:bg-white/5 transition-colors duration-200"
+                  aria-expanded={userMenuOpen}
+                  aria-haspopup="true"
+                  aria-label={`Account menu for ${userData.name}`}
+                  className="flex items-center justify-center w-9 h-9 bg-ftm-up hover:bg-ftm-card border border-ftm-line transition-colors"
                 >
-                  <div className="w-8 h-8 bg-ftm-slate/[.14] rounded-full flex items-center justify-center">
-                    <span className="text-ftm-slate text-sm font-bold font-grotesk">
-                      {userData.name.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
+                  <span className="font-grotesk text-[14px] font-bold text-ftm-mut">
+                    {userData.name.charAt(0).toUpperCase()}
+                  </span>
                 </button>
 
                 {userMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-ftm-up rounded-lg shadow-lg border border-white/[.08] z-50">
-                    <div className="py-1">
-                      <div className="px-4 py-2 border-b border-white/[.07]">
-                        <p className="text-sm font-medium text-ftm-ink">{userData.name}</p>
-                        <p className="text-xs text-ftm-dim">EPT ID: {userData.eptId}</p>
-                      </div>
-                      {bookingDetails && (
-                        <div className="px-4 py-2 border-b border-white/[.07]">
-                          <p className="text-xs text-ftm-dim">Test Date</p>
-                          <p className="text-sm font-medium text-ftm-ink">{bookingDetails.selectedDate}</p>
-                        </div>
-                      )}
-                      <button
-                        onClick={handleSignOut}
-                        className="w-full text-left px-4 py-2 text-sm text-ftm-red hover:bg-ftm-red/10 transition-colors"
-                      >
-                        Sign Out
-                      </button>
+                  <div className="absolute right-0 mt-2 w-60 bg-ftm-up border border-ftm-line2 z-50">
+                    <div className="px-4 py-3 border-b border-ftm-line">
+                      <p className="font-inter text-[13px] font-semibold text-ftm-ink">{userData.name}</p>
+                      <p className="font-inter text-[12px] text-ftm-dim mt-0.5" data-figure>{userData.eptId}</p>
                     </div>
+                    {bookingDetails && (
+                      <div className="px-4 py-3 border-b border-ftm-line">
+                        <p className="font-inter text-[11px] tracking-[.12em] uppercase text-ftm-dim">Test date</p>
+                        <p className="font-inter text-[13px] font-semibold text-ftm-ink mt-1">{bookingDetails.selectedDate}</p>
+                      </div>
+                    )}
+                    <Link
+                      href="/privacy"
+                      className="block px-4 py-2.5 font-inter text-[13px] text-ftm-mut hover:text-ftm-ink hover:bg-ftm-card transition-colors"
+                    >
+                      What the exam records
+                    </Link>
+                    <button
+                      onClick={handleSignOut}
+                      className="w-full text-left px-4 py-2.5 font-inter text-[13px] font-semibold text-ftm-ink hover:bg-ftm-card transition-colors border-t border-ftm-line"
+                    >
+                      Sign out
+                    </button>
                   </div>
                 )}
               </div>
@@ -270,16 +261,16 @@ export default function Navigation() {
       </div>
 
       {userData?.name && (
-        <div className="sm:hidden bg-ftm-night border-t border-white/[.07] px-4 py-2">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-ftm-ink">{userData.name}</p>
+        <div className="sm:hidden bg-ftm-night border-t border-ftm-line px-6 py-2.5">
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <p className="font-inter text-[13px] font-semibold text-ftm-ink truncate">{userData.name}</p>
               {bookingDetails?.selectedDate && (
-                <p className="text-xs text-ftm-dim">Test: {bookingDetails.selectedDate}</p>
+                <p className="font-inter text-[12px] text-ftm-dim">{bookingDetails.selectedDate}</p>
               )}
             </div>
             {shouldShowTestLink && isTestActive && (
-              <StatusBadge status="active">Test Available</StatusBadge>
+              <StatusBadge status="active">Open now</StatusBadge>
             )}
           </div>
         </div>

@@ -1,15 +1,45 @@
-// pages/booking.js — Futurimi booking flow (capacity display + error recovery preserved)
-import React, { useState, useEffect } from 'react';
+// pages/booking.js — Futurimi booking flow.
+//
+// The logic (capacity maths, three-week window, next-available-date recovery)
+// is unchanged. What changed is everything the candidate sees:
+//   - The step indicator was four circles joined by lines, with green ticks for
+//     completed steps. It is now a segmented rule plus "Step 3 of 4", which
+//     survives being read aloud and does not rely on colour.
+//   - The date picker was a grid of rounded cards. It is now a ruled list of
+//     real radios with the remaining count right-aligned in tabular figures —
+//     you can compare availability down the column at a glance.
+//   - Errors follow the GOV.UK pattern: a summary at the top of the form.
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { isWithinThreeWeeks, isFutureDate, isDateVisibleISO } from '../utils/dateUtils';
-import { Card, FormField, Input, Alert, Badge } from '../components/UIDesignSystem';
-import { LoadingButton } from '../components/LoadingStates';
 import { useToast } from '../components/ToastContext';
+import PaperFooter from '../components/PaperFooter';
 
-// 'Friday, 05 June' -> { weekday: 'Fri', short: '05 June' }
+const STEPS = ['Your details', 'Laptop', 'Date', 'Confirm'];
+
+// 'Friday, 05 June' -> { weekday: 'Friday', short: '05 June' }
 function splitDate(dateStr) {
   const [weekday, rest] = String(dateStr).split(', ');
-  return { weekday: (weekday || '').slice(0, 3), short: rest || dateStr };
+  return { weekday: weekday || '', short: rest || dateStr };
+}
+
+function Field({ label, hint, error, htmlFor, children }) {
+  return (
+    <div className="mb-8">
+      <label htmlFor={htmlFor} className="block font-inter font-bold text-[17px] text-ftm-ink mb-1">
+        {label}
+      </label>
+      {hint && (
+        <p id={`${htmlFor}-hint`} className="font-inter text-[14px] text-ftm-mut mb-3">
+          {hint}
+        </p>
+      )}
+      {error && (
+        <p className="font-inter font-semibold text-[14px] text-ftm-ochre mb-3">{error}</p>
+      )}
+      {children}
+    </div>
+  );
 }
 
 export default function Booking() {
@@ -26,6 +56,7 @@ export default function Booking() {
   const [success, setSuccess] = useState(false);
   const [dateCapacity, setDateCapacity] = useState({});
   const [regularDates, setRegularDates] = useState([]);
+  const errorRef = useRef(null);
   const router = useRouter();
   const { addToast } = useToast();
 
@@ -40,7 +71,11 @@ export default function Booking() {
           setRegularDates(regularDates);
         }
       } catch {
-        addToast({ type: 'error', title: 'Loading Error', message: 'Failed to load test dates. Please refresh.' });
+        addToast({
+          type: 'error',
+          title: 'Could not load dates',
+          message: 'We could not load the available test dates. Refresh the page to try again.',
+        });
       }
     }
     fetchTestDates();
@@ -68,11 +103,6 @@ export default function Booking() {
     return Math.max(0, Math.min(categorySpots, 100 - totalBooked));
   };
 
-  const getTotalRemaining = (date) => {
-    const booked = dateCapacity[date] || { withLaptop: 0, withoutLaptop: 0 };
-    return Math.max(0, 100 - booked.withLaptop - booked.withoutLaptop);
-  };
-
   // Same rule as always: only dates from today to three weeks out are bookable.
   // Prefer the real ISO date when the API supplies one (admin-managed dates);
   // fall back to parsing the legacy yearless display string.
@@ -88,6 +118,11 @@ export default function Booking() {
   const nextStep = () => { if (step < 4) setStep(step + 1); };
   const prevStep = () => { if (step > 1) setStep(step - 1); };
 
+  const fail = (message) => {
+    setError(message);
+    requestAnimationFrame(() => errorRef.current?.focus());
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (step < 4) { nextStep(); return; }
@@ -97,7 +132,10 @@ export default function Booking() {
 
     try {
       const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
-      if (!userData.eptId) { setError('EPT ID not found. Please log in again.'); return; }
+      if (!userData.eptId) {
+        fail('We could not find your EPT ID. Sign in again and retry.');
+        return;
+      }
 
       const csrfToken = sessionStorage.getItem('csrfToken');
       const response = await fetch('/api/booking', {
@@ -118,19 +156,19 @@ export default function Booking() {
             .find(d => getAvailableSpots(d.date, formData.hasLaptop) > 0);
 
           if (nextAvailable) {
-            setError(`${result.message} Next available: ${nextAvailable.date}`);
             setStep(3);
+            fail(`That date filled up. The next date with space is ${nextAvailable.date}.`);
             return;
           }
         }
-        throw new Error(result.message || 'Failed to create booking');
+        throw new Error(result.message || 'We could not complete your booking.');
       }
 
       setSuccess(true);
-      addToast({ type: 'success', title: 'Registration Successful!', message: 'Your test has been scheduled.' });
-      setTimeout(() => router.push('/registration-complete'), 1500);
-    } catch (error) {
-      setError(error.message || 'Registration failed. Please try again.');
+      addToast({ type: 'success', title: 'Booked', message: 'Your sitting is confirmed.' });
+      setTimeout(() => router.push('/registration-complete'), 1200);
+    } catch (err) {
+      fail(err.message || 'We could not complete your booking. Check your connection and try again.');
     } finally {
       setIsLoading(false);
     }
@@ -138,254 +176,269 @@ export default function Booking() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-ftm-night flex items-center justify-center p-4">
-        <Card className="w-full max-w-md p-8 text-center">
-          <div className="w-16 h-16 bg-ftm-green/[.14] rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-ftm-green" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-          <h2 className="font-grotesk text-2xl font-bold text-ftm-ink mb-2">Registration Complete!</h2>
-          <p className="text-ftm-mut">Redirecting to your confirmation&hellip;</p>
-        </Card>
+      <div className="min-h-screen bg-ftm-night flex items-center justify-center px-6">
+        <div className="max-w-measure border-t-2 border-ftm-green pt-6">
+          <h1 className="font-grotesk font-bold text-[28px] text-ftm-ink mb-2">You are booked</h1>
+          <p className="font-inter text-[15px] text-ftm-mut">Taking you to your confirmation.</p>
+        </div>
       </div>
     );
   }
 
-  const steps = ['Personal Info', 'Laptop Setup', 'Select Date', 'Confirm'];
+  const visibleDates = regularDates.filter(isDateVisible);
+
+  const cannotAdvance =
+    (step === 1 && (!formData.name || !formData.email || !validateEmail(formData.email))) ||
+    (step === 2 && formData.hasLaptop === null) ||
+    (step === 3 && !formData.selectedDate) ||
+    (step === 4 && !formData.confirmedAttendance);
+
+  const inputClass = `block w-full max-w-[420px] font-inter text-[17px] text-ftm-ink bg-ftm-night
+    border-2 border-ftm-line2 focus:border-ftm-ink px-4 py-3 transition-colors`;
 
   return (
-    <div className="min-h-screen bg-ftm-night">
-      <div className="container mx-auto px-4 py-10">
-        <div className="max-w-2xl mx-auto">
-          <div className="mb-7">
-            <h1 className="font-grotesk font-bold text-2xl text-ftm-ink mb-1">Book your Futurimi date</h1>
-            <p className="font-inter text-sm text-ftm-mut">All sessions run at ALU Kigali. Choose a date and time that works for you.</p>
+    <div className="min-h-screen bg-ftm-night flex flex-col">
+      <div className="flex-1 w-full max-w-shell mx-auto px-6 sm:px-10 py-12">
+        <div className="max-w-[640px]">
+          <h1 className="font-grotesk font-bold text-[30px] text-ftm-ink mb-2">Book your test date</h1>
+          <p className="font-inter text-[15px] text-ftm-mut mb-10">
+            All sittings run at ALU Kigali and start at 10:00.
+          </p>
+
+          {/* Step indicator — a segmented rule, not a row of circles */}
+          <div className="mb-10">
+            <p className="font-inter font-bold text-[11px] tracking-[.14em] uppercase text-ftm-dim mb-2">
+              Step <span data-figure>{step}</span> of <span data-figure>{STEPS.length}</span>
+              <span className="text-ftm-ink normal-case tracking-normal text-[13px] ml-2 font-semibold">
+                {STEPS[step - 1]}
+              </span>
+            </p>
+            <div className="flex gap-1" role="presentation">
+              {STEPS.map((title, i) => (
+                <div
+                  key={title}
+                  className={`h-1 flex-1 ${i < step ? 'bg-ftm-crimson' : 'bg-ftm-up'}`}
+                />
+              ))}
+            </div>
           </div>
 
-          <Card className="p-8" hover={false}>
-            {/* Step indicator */}
-            <div className="mb-8">
-              <div className="flex items-center justify-between mb-3">
-                {steps.map((title, index) => (
-                  <div key={index} className="flex items-center">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all ${
-                      step > index + 1 ? 'bg-ftm-green/[.2] text-ftm-green' :
-                      step === index + 1 ? 'bg-ftm-red text-white shadow-redglow' :
-                      'bg-white/[.06] text-ftm-dim'
-                    }`}>
-                      {step > index + 1 ? (
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                      ) : (
-                        index + 1
-                      )}
-                    </div>
-                    {index < steps.length - 1 && (
-                      <div className={`hidden sm:block w-12 md:w-20 h-0.5 mx-2 transition-all ${
-                        step > index + 1 ? 'bg-ftm-green/50' : 'bg-white/[.08]'
-                      }`} />
-                    )}
-                  </div>
-                ))}
-              </div>
-              <div className="flex justify-between text-xs sm:text-sm">
-                {steps.map((title, index) => (
-                  <span key={index} className={`${
-                    step === index + 1 ? 'text-ftm-red font-semibold' :
-                    step > index + 1 ? 'text-ftm-green' : 'text-ftm-dim'
-                  }`}>
-                    {title}
-                  </span>
-                ))}
-              </div>
+          {error && (
+            <div
+              ref={errorRef}
+              tabIndex={-1}
+              role="alert"
+              className="border-l-[6px] border-ftm-crimson bg-ftm-card px-5 py-4 mb-10"
+            >
+              <h2 className="font-grotesk font-bold text-[15px] text-ftm-ochre mb-1">There is a problem</h2>
+              <p className="font-inter text-[15px] text-ftm-ink">{error}</p>
             </div>
+          )}
 
-            {error && (
-              <Alert type="error" title="Registration Error" dismissible onDismiss={() => setError('')} className="mb-6">
-                {error}
-              </Alert>
+          <form onSubmit={handleSubmit}>
+            {step === 1 && (
+              <>
+                <Field label="Full name" hint="As it appears on your student ID." htmlFor="name">
+                  <input
+                    id="name"
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => updateFormData('name', e.target.value)}
+                    required
+                    autoComplete="name"
+                    className={inputClass}
+                  />
+                </Field>
+                <Field
+                  label="Email address"
+                  hint="We send test updates and results here."
+                  htmlFor="email"
+                  error={formData.email && !validateEmail(formData.email) ? 'Enter an email address in the format name@example.com.' : ''}
+                >
+                  <input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => updateFormData('email', e.target.value)}
+                    required
+                    autoComplete="email"
+                    className={inputClass}
+                  />
+                </Field>
+              </>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Step 1 */}
-              {step === 1 && (
-                <div className="space-y-6">
-                  <FormField label="Full Name" required helpText="Enter your full name as it appears on your ID">
-                    <Input
-                      type="text"
-                      placeholder="John Doe"
-                      value={formData.name}
-                      onChange={(e) => updateFormData('name', e.target.value)}
-                      required
-                      icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>}
-                    />
-                  </FormField>
-                  <FormField
-                    label="Email Address"
-                    required
-                    helpText="We'll send test updates and results to this email"
-                    error={formData.email && !validateEmail(formData.email) ? 'Please enter a valid email address' : ''}
-                  >
-                    <Input
-                      type="email"
-                      placeholder="john@example.com"
-                      value={formData.email}
-                      onChange={(e) => updateFormData('email', e.target.value)}
-                      required
-                      error={formData.email && !validateEmail(formData.email)}
-                      icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>}
-                    />
-                  </FormField>
-                </div>
-              )}
-
-              {/* Step 2 */}
-              {step === 2 && (
-                <div className="space-y-6">
-                  <FormField label="Will you bring your own laptop?" required helpText="Bringing your own is preferred. We can provide one if needed (limited availability).">
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      {[
-                        { value: true, label: 'Bringing own laptop', desc: 'I have my own laptop' },
-                        { value: false, label: 'Use provided laptop', desc: 'Please provide one for me' },
-                      ].map((option) => (
-                        <label
-                          key={option.value.toString()}
-                          className={`flex flex-col items-center p-5 border rounded-lg cursor-pointer transition-all ${
-                            formData.hasLaptop === option.value
-                              ? 'border-ftm-red border-2 bg-ftm-red/[.12]'
-                              : 'border-white/[.08] bg-ftm-night hover:border-white/[.18]'
-                          }`}
-                        >
-                          <input type="radio" name="hasLaptop" value={option.value} checked={formData.hasLaptop === option.value} onChange={() => updateFormData('hasLaptop', option.value)} className="sr-only" required />
-                          <span className={`font-inter font-semibold text-sm ${formData.hasLaptop === option.value ? 'text-ftm-ink' : 'text-ftm-slate'}`}>{option.label}</span>
-                          <span className="font-inter text-xs text-ftm-dim mt-0.5">{option.desc}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </FormField>
-                </div>
-              )}
-
-              {/* Step 3 — date grid */}
-              {step === 3 && (
-                <div className="space-y-6">
-                  <FormField label="Select Test Date" required helpText="Choose from available dates within the next three weeks">
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-96 overflow-y-auto custom-scrollbar pr-1">
-                      {regularDates
-                        .filter(dateObj => isDateVisible(dateObj))
-                        .map((dateObj) => {
-                          const spots = getAvailableSpots(dateObj.date, formData.hasLaptop);
-                          const isAvailable = spots > 0;
-                          const isSelected = formData.selectedDate === dateObj.date;
-                          const { weekday, short } = splitDate(dateObj.date);
-
-                          return (
-                            <label
-                              key={dateObj.date}
-                              className={`relative block p-4 rounded-lg cursor-pointer transition-all ${
-                                !isAvailable ? 'border border-white/[.05] bg-ftm-night opacity-50 cursor-not-allowed' :
-                                isSelected ? 'border-2 border-ftm-red bg-ftm-red/[.12] p-[15px]' :
-                                'border border-white/[.08] bg-ftm-card hover:border-white/[.18]'
-                              }`}
-                            >
-                              <input
-                                type="radio"
-                                name="selectedDate"
-                                value={dateObj.date}
-                                checked={isSelected}
-                                onChange={() => updateFormData('selectedDate', dateObj.date)}
-                                disabled={!isAvailable}
-                                className="sr-only"
-                                required
-                              />
-                              <span className={`font-inter font-medium text-[11px] uppercase ${isSelected ? 'text-ftm-redsoft' : 'text-ftm-dim'}`}>
-                                {weekday}
-                              </span>
-                              <div className="font-grotesk font-bold text-xl text-ftm-ink my-1">{short}</div>
-                              <span className={`font-inter font-medium text-xs ${isSelected ? 'text-[#F0B4BD]' : 'text-ftm-mut'}`}>
-                                {isAvailable ? `${spots} slots left` : 'Full'}
-                              </span>
-                              {isSelected && (
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E0273F" strokeWidth="2.2" className="absolute top-3 right-3">
-                                  <polyline points="20 6 9 17 4 12"></polyline>
-                                </svg>
-                              )}
-                            </label>
-                          );
-                        })}
-                    </div>
-                  </FormField>
-                </div>
-              )}
-
-              {/* Step 4 — summary */}
-              {step === 4 && (
-                <div className="space-y-6">
-                  <Alert type="info" title="Please Review Your Information">
-                    Confirm all details are correct before submitting.
-                  </Alert>
-                  <div className="bg-ftm-night border border-white/[.08] p-6 rounded-lg space-y-4">
-                    <h3 className="font-grotesk font-semibold text-ftm-ink">Registration Summary</h3>
-                    <div className="grid gap-3 text-sm">
-                      {[
-                        ['Name', formData.name],
-                        ['Email', formData.email],
-                        ['Test Date', formData.selectedDate],
-                        ['Time & Location', '10:00 AM · ALU Kigali'],
-                      ].map(([label, val]) => (
-                        <div key={label} className="flex justify-between">
-                          <span className="text-ftm-mut">{label}:</span>
-                          <span className="font-medium text-ftm-ink">{val}</span>
-                        </div>
-                      ))}
-                      <div className="flex justify-between">
-                        <span className="text-ftm-mut">Laptop:</span>
-                        <Badge variant={formData.hasLaptop ? 'success' : 'default'} size="sm">
-                          {formData.hasLaptop ? 'Bringing Own' : 'Using Provided'}
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
-                  <FormField>
-                    <label className="flex items-start">
-                      <input type="checkbox" required className="h-4 w-4 accent-[#E0273F] mt-1" checked={formData.confirmedAttendance} onChange={(e) => updateFormData('confirmedAttendance', e.target.checked)} />
-                      <span className="ml-3 text-sm text-ftm-slate">
-                        I confirm I will attend the test in person on the selected date and understand that missing the test may require rescheduling.
+            {step === 2 && (
+              <fieldset className="mb-8">
+                <legend className="font-inter font-bold text-[17px] text-ftm-ink mb-1">
+                  Will you bring your own laptop?
+                </legend>
+                <p className="font-inter text-[14px] text-ftm-mut mb-4">
+                  Bringing your own is preferred. We can provide one, but there are fewer of those places.
+                </p>
+                <div className="border-t border-ftm-line2">
+                  {[
+                    { value: true, label: 'Yes, I will bring my own laptop' },
+                    { value: false, label: 'No, please provide one' },
+                  ].map((option) => (
+                    <label
+                      key={option.value.toString()}
+                      className="flex items-center gap-4 py-4 border-b border-ftm-line cursor-pointer group"
+                    >
+                      <input
+                        type="radio"
+                        name="hasLaptop"
+                        value={option.value.toString()}
+                        checked={formData.hasLaptop === option.value}
+                        onChange={() => updateFormData('hasLaptop', option.value)}
+                        className="w-5 h-5 accent-[#C5132D] flex-none"
+                        required
+                      />
+                      <span className={`font-inter text-[16px] transition-colors ${
+                        formData.hasLaptop === option.value
+                          ? 'text-ftm-ink font-semibold'
+                          : 'text-ftm-mut group-hover:text-ftm-ink'
+                      }`}>
+                        {option.label}
                       </span>
                     </label>
-                  </FormField>
+                  ))}
                 </div>
-              )}
+              </fieldset>
+            )}
 
-              {/* Nav buttons */}
-              <div className="flex justify-between pt-6 border-t border-white/[.07]">
+            {step === 3 && (
+              <fieldset className="mb-8">
+                <legend className="font-inter font-bold text-[17px] text-ftm-ink mb-1">
+                  Choose a date
+                </legend>
+                <p className="font-inter text-[14px] text-ftm-mut mb-4">
+                  Dates in the next three weeks. Places shown are for{' '}
+                  {formData.hasLaptop ? 'candidates bringing a laptop' : 'candidates using a provided laptop'}.
+                </p>
+
+                {visibleDates.length === 0 ? (
+                  <p className="font-inter text-[15px] text-ftm-mut border-t border-ftm-line2 pt-4">
+                    No dates are open at the moment. Email the Writing Centre and we will tell you when the
+                    next sittings are published.
+                  </p>
+                ) : (
+                  <div className="border-t border-ftm-line2 max-h-[420px] overflow-y-auto custom-scrollbar">
+                    {visibleDates.map((dateObj) => {
+                      const spots = getAvailableSpots(dateObj.date, formData.hasLaptop);
+                      const isAvailable = spots > 0;
+                      const isSelected = formData.selectedDate === dateObj.date;
+                      const { weekday, short } = splitDate(dateObj.date);
+
+                      return (
+                        <label
+                          key={dateObj.date}
+                          className={`flex items-center gap-4 py-4 pr-1 border-b border-ftm-line group ${
+                            isAvailable ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="selectedDate"
+                            value={dateObj.date}
+                            checked={isSelected}
+                            onChange={() => updateFormData('selectedDate', dateObj.date)}
+                            disabled={!isAvailable}
+                            className="w-5 h-5 accent-[#C5132D] flex-none"
+                            required
+                          />
+                          <span className="flex-1 min-w-0">
+                            <span className={`block font-inter text-[16px] ${
+                              isSelected ? 'text-ftm-ink font-semibold' : 'text-ftm-ink group-hover:text-ftm-ink'
+                            }`}>
+                              {short}
+                            </span>
+                            <span className="block font-inter text-[13px] text-ftm-dim">{weekday}, 10:00</span>
+                          </span>
+                          <span
+                            className={`font-inter text-[13px] tabular-nums whitespace-nowrap ${
+                              isAvailable ? 'text-ftm-mut' : 'text-ftm-ochre font-semibold'
+                            }`}
+                          >
+                            {isAvailable ? `${spots} places left` : 'Full'}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+              </fieldset>
+            )}
+
+            {step === 4 && (
+              <div className="mb-8">
+                <h2 className="font-grotesk font-bold text-[19px] text-ftm-ink mb-4">
+                  Check your answers
+                </h2>
+                <dl className="ftm-facts mb-8">
+                  <div><dt className="k">Name</dt><dd className="v">{formData.name}</dd></div>
+                  <div><dt className="k">Email</dt><dd className="v break-all">{formData.email}</dd></div>
+                  <div><dt className="k">Test date</dt><dd className="v">{formData.selectedDate}</dd></div>
+                  <div><dt className="k">Time and place</dt><dd className="v">10:00, ALU Kigali</dd></div>
+                  <div>
+                    <dt className="k">Laptop</dt>
+                    <dd className="v">{formData.hasLaptop ? 'Bringing my own' : 'Using a provided one'}</dd>
+                  </div>
+                </dl>
+
+                <label className="flex items-start gap-4 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    required
+                    className="w-5 h-5 accent-[#C5132D] mt-0.5 flex-none"
+                    checked={formData.confirmedAttendance}
+                    onChange={(e) => updateFormData('confirmedAttendance', e.target.checked)}
+                  />
+                  <span className="font-inter text-[15px] leading-relaxed text-ftm-mut">
+                    I will attend in person on this date. I understand that missing it means booking again,
+                    and I have read the{' '}
+                    <a href="/terms" className="text-ftm-ink underline underline-offset-4 hover:text-ftm-ochre transition-colors">
+                      exam rules
+                    </a>{' '}
+                    and{' '}
+                    <a href="/privacy" className="text-ftm-ink underline underline-offset-4 hover:text-ftm-ochre transition-colors">
+                      what the exam records
+                    </a>
+                    .
+                  </span>
+                </label>
+              </div>
+            )}
+
+            <div className="flex items-center gap-6 pt-8 border-t border-ftm-line">
+              <button
+                type="submit"
+                disabled={isLoading || cannotAdvance}
+                className={`inline-flex items-center gap-3 font-inter font-bold text-[16px] text-white px-7 py-3.5 transition-colors
+                  ${isLoading || cannotAdvance
+                    ? 'bg-ftm-up text-ftm-dim cursor-not-allowed'
+                    : 'bg-ftm-crimson hover:bg-ftm-crimsondeep'}`}
+              >
+                {isLoading && (
+                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" aria-hidden="true" />
+                )}
+                {step === 4 ? 'Confirm booking' : 'Continue'}
+              </button>
+              {step > 1 && (
                 <button
                   type="button"
                   onClick={prevStep}
-                  disabled={step === 1}
-                  className={`font-inter font-medium text-sm text-ftm-slate hover:text-ftm-ink px-4 py-2 rounded-md hover:bg-white/5 transition-colors ${step === 1 ? 'invisible' : ''}`}
+                  className="font-inter text-[15px] text-ftm-link underline underline-offset-4 hover:text-ftm-ink transition-colors"
                 >
-                  Previous
+                  Back
                 </button>
-                <LoadingButton
-                  type="submit"
-                  isLoading={isLoading}
-                  disabled={
-                    (step === 1 && (!formData.name || !formData.email || !validateEmail(formData.email))) ||
-                    (step === 2 && formData.hasLaptop === null) ||
-                    (step === 3 && !formData.selectedDate) ||
-                    (step === 4 && !formData.confirmedAttendance)
-                  }
-                >
-                  {step === 4 ? 'Confirm Booking' : 'Next'}
-                </LoadingButton>
-              </div>
-            </form>
-          </Card>
+              )}
+            </div>
+          </form>
         </div>
       </div>
+
+      <PaperFooter tone="night" />
     </div>
   );
 }

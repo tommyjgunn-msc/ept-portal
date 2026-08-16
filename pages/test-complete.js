@@ -1,13 +1,22 @@
-// pages/test-complete.js — Enhanced test progress/completion page
+// pages/test-complete.js — what you submitted, and where each section stands.
+//
+// This page is a status report, so it is now a table: three rows, real column
+// headers, scores right-aligned in tabular figures so they compare down the
+// column. What went: a green circle with a tick, a card per section, an icon
+// medallion tinted by state, and two separate progress bars per row that
+// encoded the same number as the text beside them.
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { Card, Button, Badge, Alert } from '../components/UIDesignSystem';
+import { Button } from '../components/UIDesignSystem';
+import { SkeletonTable, ErrorState } from '../components/LoadingStates';
+import PaperFooter from '../components/PaperFooter';
+
+const TEST_TYPES = ['reading', 'writing', 'listening'];
 
 export default function TestComplete() {
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [bookingDetails, setBookingDetails] = useState(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -22,17 +31,14 @@ export default function TestComplete() {
         }
 
         const userData = JSON.parse(storedUserData);
-        const parsedBookingDetails = JSON.parse(storedBookingDetails);
-
         if (!userData.eptId) { router.push('/login'); return; }
 
-        setBookingDetails(parsedBookingDetails);
         const response = await fetch(`/api/test-results?student_id=${userData.eptId}`);
-        if (!response.ok) throw new Error('Failed to fetch results');
+        if (!response.ok) throw new Error('We could not load your sections.');
 
         setResults(await response.json());
-      } catch (error) {
-        setError(error.message || 'An unexpected error occurred');
+      } catch (err) {
+        setError(err.message || 'Something went wrong loading your sections.');
       } finally {
         setLoading(false);
       }
@@ -43,161 +49,150 @@ export default function TestComplete() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-ftm-night flex items-center justify-center">
-        <Card className="p-8 text-center">
-          <div className="w-12 h-12 border-2 border-ftm-red border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-ftm-mut font-medium">Loading your results...</p>
-        </Card>
+      <div className="min-h-screen bg-ftm-night">
+        <div className="max-w-shell mx-auto px-6 sm:px-10 py-12" aria-busy="true">
+          <div className="ftm-skeleton h-8 w-64 mb-3" />
+          <div className="ftm-skeleton h-4 w-48 mb-10" />
+          <SkeletonTable rows={3} columns={3} className="max-w-[720px]" />
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-ftm-night flex items-center justify-center p-4">
-        <Card className="p-8 max-w-md w-full text-center">
-          <div className="w-16 h-16 bg-ftm-red/[.14] rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-ftm-red" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.996-.833-2.767 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
+      <div className="min-h-screen bg-ftm-night flex items-center">
+        <div className="w-full max-w-shell mx-auto px-6 sm:px-10">
+          <ErrorState
+            title="We could not load your sections"
+            message={`${error} Your submitted work is not affected.`}
+            onRetry={() => router.reload()}
+          />
+          <div className="px-6 mt-2">
+            <Button variant="ghost" onClick={() => router.push('/home')}>Back to my dashboard</Button>
           </div>
-          <h2 className="text-xl font-bold text-ftm-ink mb-2">Error Loading Results</h2>
-          <p className="text-ftm-mut mb-6">{error}</p>
-          <Button onClick={() => router.push('/home')} className="w-full">Return to Home</Button>
-        </Card>
+        </div>
       </div>
     );
   }
 
-  const testTypes = ['reading', 'writing', 'listening'];
-
   const getTestStatus = (type) => {
-    if (!results?.[type]) return { status: 'not_started', label: 'Not Started', variant: 'default' };
+    if (!results?.[type]) return { status: 'not_started', label: 'Not started', mark: null };
     const t = results[type];
     const hasResponses = t.responses && Object.keys(t.responses).length > 0;
 
     if (type === 'writing' && hasResponses && t.score === null) {
-      return { status: 'pending', label: 'Pending Review', variant: 'warning' };
+      return { status: 'pending', label: 'Being marked', mark: null };
     }
     if (t.completed && hasResponses) {
-      return { status: 'completed', label: t.score !== null ? `${t.score}/${t.total_points}` : 'Submitted', variant: 'success' };
+      return {
+        status: 'completed',
+        label: t.score !== null ? 'Marked' : 'Submitted',
+        mark: t.score !== null ? `${t.score}/${t.total_points}` : null,
+      };
     }
-    if (hasResponses) return { status: 'incomplete', label: 'Incomplete', variant: 'warning' };
-    return { status: 'not_started', label: 'Not Started', variant: 'default' };
+    if (hasResponses) return { status: 'incomplete', label: 'Incomplete', mark: null };
+    return { status: 'not_started', label: 'Not started', mark: null };
   };
 
-  const allCompleted = testTypes.every(t => {
-    const s = getTestStatus(t);
-    return s.status === 'completed' || s.status === 'pending';
-  });
+  const done = TEST_TYPES.filter(t => ['completed', 'pending'].includes(getTestStatus(t).status));
+  const allCompleted = done.length === TEST_TYPES.length;
 
-  const completedCount = testTypes.filter(t => {
-    const s = getTestStatus(t);
-    return s.status === 'completed' || s.status === 'pending';
-  }).length;
-
-  const TEST_ICONS = {
-    reading: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />,
-    writing: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />,
-    listening: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />,
+  const statusColour = {
+    completed: 'text-ftm-green',
+    pending: 'text-ftm-ochre',
+    incomplete: 'text-ftm-ochre',
+    not_started: 'text-ftm-dim',
   };
 
   return (
-    <div className="min-h-screen bg-ftm-night py-12 px-4">
-      <div className="max-w-2xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-8">
-          {allCompleted ? (
-            <>
-              <div className="w-20 h-20 bg-ftm-green/[.14] rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-10 h-10 text-ftm-green" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <h1 className="text-3xl font-bold text-ftm-ink mb-2">All Tests Complete</h1>
-              <p className="text-ftm-mut">Your results will be available after review.</p>
-            </>
-          ) : (
-            <>
-              <h1 className="text-3xl font-bold text-ftm-ink mb-2">Test Progress</h1>
-              <p className="text-ftm-mut">{completedCount} of {testTypes.length} sections completed</p>
-            </>
-          )}
-        </div>
+    <div className="min-h-screen bg-ftm-night flex flex-col">
+      <div className="flex-1 w-full max-w-shell mx-auto px-6 sm:px-10 py-12">
+        <div className="max-w-[720px]">
+          <h1 className="font-grotesk font-bold text-[30px] text-ftm-ink mb-2">
+            {allCompleted ? 'All three sections submitted' : 'Your sections'}
+          </h1>
+          <p className="font-inter text-[15px] text-ftm-mut mb-10">
+            {allCompleted
+              ? 'Nothing more is needed from you. The Writing Centre releases results once marking has been checked.'
+              : <><span className="tabular-nums font-semibold text-ftm-ink">{done.length}</span> of{' '}
+                 <span className="tabular-nums">{TEST_TYPES.length}</span> submitted.</>}
+          </p>
 
-        {/* Progress */}
-        <div className="mb-8">
-          <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
-            <div
-              className="h-2 bg-ftm-green rounded-full transition-all duration-700"
-              style={{ width: `${(completedCount / testTypes.length) * 100}%` }}
-            />
+          <div className="overflow-x-auto">
+            <table className="w-full font-inter text-[14px] border-collapse min-w-[480px]">
+              <caption className="sr-only">Your three exam sections and their current state</caption>
+              <thead>
+                <tr>
+                  <th scope="col" className="text-left font-semibold text-[10px] tracking-[.14em] uppercase text-ftm-dim py-2 pr-4 border-b border-ftm-line2">
+                    Section
+                  </th>
+                  <th scope="col" className="text-left font-semibold text-[10px] tracking-[.14em] uppercase text-ftm-dim py-2 pr-4 border-b border-ftm-line2">
+                    Submitted
+                  </th>
+                  <th scope="col" className="text-left font-semibold text-[10px] tracking-[.14em] uppercase text-ftm-dim py-2 pr-4 border-b border-ftm-line2">
+                    State
+                  </th>
+                  <th scope="col" className="text-right font-semibold text-[10px] tracking-[.14em] uppercase text-ftm-dim py-2 border-b border-ftm-line2">
+                    Mark
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {TEST_TYPES.map((type) => {
+                  const status = getTestStatus(type);
+                  const testData = results?.[type];
+
+                  return (
+                    <tr key={type}>
+                      <th scope="row" className="text-left py-4 pr-4 border-b border-ftm-line align-top font-semibold text-ftm-ink capitalize">
+                        {type}
+                      </th>
+                      <td className="py-4 pr-4 border-b border-ftm-line align-top text-ftm-mut tabular-nums whitespace-nowrap">
+                        {testData?.submission_date
+                          ? new Date(testData.submission_date).toLocaleString('en-GB', {
+                              day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
+                            })
+                          : '—'}
+                      </td>
+                      <td className="py-4 pr-4 border-b border-ftm-line align-top">
+                        <span className={`ftm-status font-semibold ${statusColour[status.status]}`}>
+                          {status.label}
+                        </span>
+                      </td>
+                      <td className="py-4 border-b border-ftm-line align-top text-right tabular-nums font-semibold text-ftm-ink whitespace-nowrap">
+                        {status.mark || <span className="text-ftm-dim font-normal">—</span>}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {TEST_TYPES.some(t => getTestStatus(t).status === 'pending') && (
+            <div className="border-l-[6px] border-ftm-ochre pl-4 py-1 mt-8">
+              <p className="font-inter text-[15px] leading-relaxed text-ftm-mut">
+                Writing is marked out of 50, first by a language model and then checked by Writing
+                Centre staff. A mark shown here is not final until that check is done.
+              </p>
+            </div>
+          )}
+
+          <div className="flex flex-wrap items-center gap-6 mt-12 pt-8 border-t border-ftm-line">
+            {allCompleted && (
+              <Button variant="primary" onClick={() => router.push('/test-result')}>
+                See the full breakdown
+              </Button>
+            )}
+            <Button variant="ghost" onClick={() => router.push('/home')}>
+              Back to my dashboard
+            </Button>
           </div>
         </div>
-
-        {/* Test cards */}
-        <div className="space-y-4">
-          {testTypes.map((type, idx) => {
-            const status = getTestStatus(type);
-            const testData = results?.[type];
-
-            return (
-              <Card key={type} className="p-5" hover={false}>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                      status.status === 'completed' ? 'bg-ftm-green/[.14] text-ftm-green' :
-                      status.status === 'pending' ? 'bg-ftm-amber/[.14] text-ftm-amber' :
-                      'bg-ftm-slate/[.12] text-ftm-dim'
-                    }`}>
-                      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        {TEST_ICONS[type]}
-                      </svg>
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-ftm-ink capitalize">{type} Test</h3>
-                      {testData?.submission_date && (
-                        <p className="text-xs text-ftm-dim">
-                          {new Date(testData.submission_date).toLocaleString()}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <Badge variant={status.variant} size="md">{status.label}</Badge>
-                </div>
-
-                {status.status === 'completed' && testData?.score !== null && (
-                  <div className="mt-4 pt-3 border-t border-white/[.07]">
-                    <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
-                      <div
-                        className="bg-ftm-green rounded-full h-2 transition-all duration-700"
-                        style={{ width: `${testData.total_points > 0 ? (testData.score / testData.total_points) * 100 : 0}%` }}
-                      />
-                    </div>
-                    <p className="text-sm text-ftm-mut mt-1 text-right">
-                      {testData.score} / {testData.total_points} points
-                    </p>
-                  </div>
-                )}
-
-                {status.status === 'pending' && (
-                  <div className="mt-3 bg-ftm-amber/10 border border-ftm-amber/30 rounded-lg p-3">
-                    <p className="text-sm text-ftm-amberdim">Your writing is being reviewed. Results will be available soon.</p>
-                  </div>
-                )}
-              </Card>
-            );
-          })}
-        </div>
-
-        {/* Actions */}
-        <div className="mt-8 flex justify-center space-x-3">
-          <Button variant="secondary" onClick={() => router.push('/home')}>Back to Dashboard</Button>
-          {allCompleted && (
-            <Button variant="primary" onClick={() => router.push('/test-result')}>View Full Results</Button>
-          )}
-        </div>
       </div>
+
+      <PaperFooter tone="night" />
     </div>
   );
 }

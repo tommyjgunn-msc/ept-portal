@@ -1,31 +1,28 @@
-// components/SectionTransition.js — Encouraging interstitial between test sections
+// components/SectionTransition.js — the screen between sections.
+//
+// Was a green circle with a tick, an exclamation mark, and a button that faded
+// up from below after two seconds. A candidate halfway through a proficiency
+// exam does not need to be congratulated; they need to know what landed and
+// what is next. The two-second hold stays — it stops an accidental double-click
+// carrying someone into the next section before they have read anything.
 import { useState, useEffect } from 'react';
 import { Button } from './UIDesignSystem';
 
-const MESSAGES = {
-  reading: {
-    complete: 'Reading section complete!',
-    encouragement: 'Great work. Take a moment to breathe before your next section.',
-  },
-  writing: {
-    complete: 'Writing section complete!',
-    encouragement: 'Your essay has been submitted. One more section to go.',
-  },
-  listening: {
-    complete: 'All tests complete!',
-    encouragement: 'Congratulations — you\'ve finished all three sections.',
-  },
+const COMPLETED = {
+  reading: 'Reading submitted',
+  writing: 'Writing submitted',
+  listening: 'Listening submitted',
 };
 
-const NEXT_LABELS = {
-  reading: 'Continue to Writing',
-  writing: 'Continue to Listening',
-  listening: 'View Results',
+const NEXT = {
+  reading: { label: 'Start the writing section', note: 'Writing is next: one essay, 45 minutes.' },
+  writing: { label: 'Start the listening section', note: 'Listening is next: audio comprehension, 30 minutes.' },
+  listening: { label: 'Finish', note: null },
 };
 
 export default function SectionTransition({ completedSection, onContinue, isLastSection }) {
   const [showButton, setShowButton] = useState(false);
-  const msg = MESSAGES[completedSection];
+  const next = NEXT[completedSection];
 
   useEffect(() => {
     const timer = setTimeout(() => setShowButton(true), 2000);
@@ -33,29 +30,24 @@ export default function SectionTransition({ completedSection, onContinue, isLast
   }, []);
 
   return (
-    <div className="min-h-screen bg-ftm-night flex items-center justify-center p-4">
-      <div className="max-w-md w-full text-center">
-        {/* Success icon */}
-        <div className="relative inline-block mb-6">
-          <div className="w-20 h-20 bg-ftm-green/[.14] rounded-full flex items-center justify-center mx-auto">
-            <svg className="w-10 h-10 text-ftm-green" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-        </div>
-
-        <h2 className="text-3xl font-bold text-ftm-ink mb-3">{msg.complete}</h2>
-        <p className="text-ftm-mut text-lg mb-8">{msg.encouragement}</p>
-
-        {!isLastSection && (
-          <p className="text-sm text-ftm-mut mb-4">
-            Please wait for the instructor before proceeding.
+    <div className="min-h-screen bg-ftm-night flex items-center px-6 sm:px-10">
+      <div className="w-full max-w-shell mx-auto">
+        <div className="max-w-measure border-t-2 border-ftm-green pt-6">
+          <p className="font-inter font-bold text-[11px] tracking-[.14em] uppercase text-ftm-green mb-3">
+            Saved
           </p>
-        )}
+          <h1 className="font-grotesk font-bold text-[30px] text-ftm-ink mb-3">
+            {isLastSection ? 'All three sections submitted' : COMPLETED[completedSection]}
+          </h1>
 
-        <div className={`transition-all duration-700 ${showButton ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-          <Button onClick={onContinue} variant="primary" size="lg" className="w-full">
-            {isLastSection ? 'View Results' : NEXT_LABELS[completedSection]}
+          <p className="font-inter text-[17px] leading-relaxed text-ftm-mut mb-8">
+            {isLastSection
+              ? 'That is the whole exam. Your answers are stored and nothing more is needed from you today. The Writing Centre releases results once marking has been checked.'
+              : `${next.note} Wait for the invigilator before you continue.`}
+          </p>
+
+          <Button onClick={onContinue} variant="primary" size="lg" disabled={!showButton}>
+            {isLastSection ? 'Finish' : next.label}
           </Button>
         </div>
       </div>

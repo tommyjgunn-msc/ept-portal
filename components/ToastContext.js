@@ -15,17 +15,27 @@ export const ToastProvider = ({ children }) => {
     setToasts(prev => prev.filter(toast => toast.id !== id));
   };
 
+  // Toasts stack downward instead of piling up at the same fixed coordinates.
+  // Two at once used to render exactly on top of each other, so the second
+  // message hid the first — which mattered most when both were errors.
   return (
     <ToastContext.Provider value={{ addToast }}>
       {children}
-      {toasts.map(toast => (
-        <Toast
-          key={toast.id}
-          {...toast}
-          isVisible={true}
-          onClose={() => removeToast(toast.id)}
-        />
-      ))}
+      <div
+        className="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"
+        aria-live="polite"
+      >
+        {toasts.map(toast => (
+          <div key={toast.id} className="pointer-events-auto">
+            <Toast
+              {...toast}
+              stacked
+              isVisible={true}
+              onClose={() => removeToast(toast.id)}
+            />
+          </div>
+        ))}
+      </div>
     </ToastContext.Provider>
   );
 };

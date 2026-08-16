@@ -1,52 +1,77 @@
-// pages/home.js — Futurimi campus-night dashboard
-import React, { useState, useEffect } from 'react';
+// pages/home.js — the candidate's dashboard.
+//
+// What changed and why:
+//   - The four bordered, rounded, gradient-filled stat cards are gone. They
+//     spent most of their ink on borders and corners to deliver four short
+//     strings. They are now a ruled fact list: label left, value right, one
+//     hairline between. Tufte's data-ink test.
+//   - The main-column / sidebar split (a bento in all but name) is now one
+//     column at reading measure with a narrow facts rail. There is only ever
+//     one thing to do on this page; the layout should say so.
+//   - The section list is a table with real column headers, not three cards.
+//   - Icons redrawn on Otl Aicher's grid: 24×24, 1.5px, square caps, strokes
+//     only horizontal, vertical or 45°.
+//   - The loading state is a skeleton of this page, not a spinner.
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
+import Link from 'next/link';
 import { useToast } from '../components/ToastContext';
 import { AluMark } from '../components/Futurimi';
-
-// Stat card: neutral by default; `live` flags the one "live" data point with a
-// red-tinted border (the rest stay neutral — no rainbow cards).
-function StatCard({ label, value, live = false }) {
-  return (
-    <div className={`bg-ftm-card border rounded-lg p-4 ${live ? 'border-ftm-red/30' : 'border-white/[.08]'}`}>
-      <span className={`font-inter font-semibold text-[10px] tracking-[.08em] uppercase ${live ? 'text-ftm-red' : 'text-ftm-dim'}`}>
-        {label}
-      </span>
-      <div className="font-grotesk font-bold text-[17px] text-ftm-ink mt-1.5">{value}</div>
-    </div>
-  );
-}
+import PaperFooter from '../components/PaperFooter';
 
 const sectionIcons = {
   Reading: (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#93A4AE" strokeWidth="1.6">
-      <rect x="4" y="3" width="16" height="18" rx="2"></rect>
-      <line x1="8" y1="8" x2="16" y2="8"></line>
-      <line x1="8" y1="12" x2="16" y2="12"></line>
-      <line x1="8" y1="16" x2="13" y2="16"></line>
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="square" aria-hidden="true">
+      <path d="M4 5h7v14H4z" /><path d="M13 5h7v14h-7z" />
+      <path d="M6 9h3M6 12h3M15 9h3M15 12h3" />
     </svg>
   ),
   Writing: (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#93A4AE" strokeWidth="1.6">
-      <line x1="6" y1="18" x2="15" y2="9"></line>
-      <rect x="14" y="7" width="3" height="3"></rect>
-      <line x1="6" y1="18" x2="4" y2="20"></line>
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="square" aria-hidden="true">
+      <path d="M5 19h4L19 9l-4-4L5 15z" /><path d="M14 6l4 4" />
     </svg>
   ),
   Listening: (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#93A4AE" strokeWidth="1.6">
-      <rect x="5" y="10" width="3" height="6"></rect>
-      <rect x="10.5" y="6" width="3" height="14"></rect>
-      <rect x="16" y="9" width="3" height="8"></rect>
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="square" aria-hidden="true">
+      <path d="M5 10v4M9 7v10M13 9v6M17 6v12M21 10v4" />
     </svg>
   ),
 };
 
-const chevron = (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6E7A82" strokeWidth="2">
-    <polyline points="9 6 15 12 9 18"></polyline>
-  </svg>
-);
+const TEST_SECTIONS = [
+  { name: 'Reading', duration: '60 min', description: 'Comprehension passages, multiple choice' },
+  { name: 'Writing', duration: '45 min', description: 'One essay, written in the room' },
+  { name: 'Listening', duration: '30 min', description: 'Audio comprehension with questions' },
+];
+
+function Fact({ label, children }) {
+  return (
+    <div>
+      <dt className="k">{label}</dt>
+      <dd className="v">{children}</dd>
+    </div>
+  );
+}
+
+function HomeSkeleton() {
+  return (
+    <div className="min-h-screen bg-ftm-night">
+      <div className="max-w-shell mx-auto px-6 sm:px-10 py-12" aria-busy="true" aria-label="Loading your dashboard">
+        <div className="ftm-skeleton h-8 w-64 mb-3" />
+        <div className="ftm-skeleton h-4 w-80 mb-12" />
+        <div className="border-t border-ftm-line2">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="flex justify-between py-3 border-b border-ftm-line">
+              <div className="ftm-skeleton h-3.5 w-24" />
+              <div className="ftm-skeleton h-3.5 w-40" />
+            </div>
+          ))}
+        </div>
+        <div className="ftm-skeleton h-40 w-full mt-12" />
+      </div>
+    </div>
+  );
+}
 
 export default function Home() {
   const [userData, setUserData] = useState(null);
@@ -62,10 +87,9 @@ export default function Home() {
       router.push('/login');
       return;
     }
-
-    const parsedUserData = JSON.parse(storedUserData);
-    setUserData(parsedUserData);
-    checkRegistration(parsedUserData.eptId);
+    const parsed = JSON.parse(storedUserData);
+    setUserData(parsed);
+    checkRegistration(parsed.eptId);
   }, [router]);
 
   const checkRegistration = async (eptId) => {
@@ -88,35 +112,19 @@ export default function Home() {
         }
         setHasCompletedTests(data.hasCompletedTests);
       }
-    } catch (error) {
+    } catch {
       addToast({
         type: 'error',
-        title: 'Connection Error',
-        message: 'Unable to check registration status. Please refresh the page.'
+        title: 'Could not reach the server',
+        message: 'We could not check your registration. Refresh the page to try again.',
       });
     } finally {
       setIsLoading(false);
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-ftm-night flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-2 border-ftm-red border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-ftm-mut font-medium">Loading your dashboard&hellip;</p>
-        </div>
-      </div>
-    );
-  }
-
+  if (isLoading) return <HomeSkeleton />;
   if (!userData) return null;
-
-  const testSections = [
-    { name: 'Reading', duration: '60 min', description: 'Comprehension passages, multiple choice' },
-    { name: 'Writing', duration: '45 min', description: 'Essay response to a given prompt' },
-    { name: 'Listening', duration: '30 min', description: 'Audio comprehension with questions' },
-  ];
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -125,194 +133,157 @@ export default function Home() {
     return 'Good evening';
   };
 
-  const status = hasCompletedTests ? 'Completed' : bookingDetails ? 'Registered' : 'Pending';
+  const status = hasCompletedTests ? 'Completed' : bookingDetails ? 'Registered' : 'Not booked';
+
+  // One primary action per state. Never two.
+  const action = !bookingDetails
+    ? {
+        eyebrow: 'You have not booked yet',
+        heading: 'Book your test date',
+        body: 'Choose a sitting at ALU Kigali. Places on each date are capped, so earlier dates fill first.',
+        label: 'Choose a date',
+        href: '/booking',
+      }
+    : hasCompletedTests
+      ? {
+          eyebrow: 'All sections submitted',
+          heading: 'You are finished',
+          body: 'Every section is in. The Writing Centre releases results once marking is checked; nothing more is needed from you.',
+          label: 'See what you submitted',
+          href: '/test-complete',
+        }
+      : {
+          eyebrow: 'You are booked',
+          heading: `${bookingDetails.selectedDate}, 10:00`,
+          body: 'At ALU Kigali. The portal unlocks at 10:00 on the day and not before. Bring your EPT ID and arrive early enough to settle.',
+          label: 'Go to the test portal',
+          href: '/test-portal',
+        };
 
   return (
-    <div className="min-h-screen bg-ftm-night">
-      <div className="max-w-[1160px] mx-auto px-4 sm:px-6 lg:px-10 py-10">
-        {/* Header row */}
-        <div className="flex items-center justify-between mb-[26px]">
+    <div className="min-h-screen bg-ftm-night flex flex-col">
+      <div className="flex-1 w-full max-w-shell mx-auto px-6 sm:px-10 py-12">
+        {/* Header */}
+        <div className="flex items-start justify-between gap-6 mb-10">
           <div>
-            <h1 className="font-grotesk font-bold text-[26px] text-ftm-ink mb-1">
+            <h1 className="font-grotesk font-bold text-[30px] leading-tight text-ftm-ink mb-1">
               {getGreeting()}, {userData.name.split(' ')[0]}
             </h1>
-            <p className="font-inter text-sm text-ftm-mut">
-              Here&rsquo;s where things stand with your <span className="font-semibold text-ftm-ink">Futurimi</span>.
+            <p className="font-inter text-[15px] text-ftm-mut">
+              Your Futurimi sitting, and what it involves.
             </p>
           </div>
-          <AluMark height={16} opacity={0.4} className="hidden sm:block" />
+          <AluMark height={16} opacity={0.5} className="hidden sm:block mt-2" />
         </div>
 
-        {/* Stat row */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 mb-[26px]">
-          <StatCard label="EPT ID" value={userData.eptId} />
-          <StatCard label="Test Date" value={bookingDetails?.selectedDate || 'Not booked'} />
-          <StatCard label="Sections" value="3 Total" />
-          <StatCard label="Status" value={status} live />
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-          {/* Main column */}
-          <div className="lg:col-span-2 space-y-[22px]">
-            {/* Primary action card */}
-            <div
-              className="border border-white/[.07] rounded-[10px] p-7 text-white"
-              style={{ background: 'linear-gradient(155deg,#20282D,#181F24)' }}
-            >
-              {!bookingDetails ? (
-                <>
-                  <span className="font-inter font-bold text-[10.5px] tracking-[.1em] uppercase text-ftm-redsoft">Not booked</span>
-                  <h2 className="font-grotesk font-bold text-[21px] text-ftm-ink my-2">Book your test date</h2>
-                  <p className="font-inter text-sm leading-relaxed text-[#9BA6AD] mb-[18px] max-w-[460px]">
-                    You haven&rsquo;t registered for a Futurimi date yet. Choose a date and time that works for you.
-                  </p>
-                  <button
-                    onClick={() => router.push('/booking')}
-                    className="font-inter font-semibold text-[13.5px] text-white bg-ftm-red hover:bg-[#C51F35] rounded-md px-5 py-3 shadow-redglow transition-colors"
-                  >
-                    Book Now
-                  </button>
-                </>
-              ) : hasCompletedTests ? (
-                <>
-                  <span className="font-inter font-bold text-[10.5px] tracking-[.1em] uppercase text-ftm-green">Tests completed</span>
-                  <h2 className="font-grotesk font-bold text-[21px] text-ftm-ink my-2">Great work!</h2>
-                  <p className="font-inter text-sm leading-relaxed text-[#9BA6AD] mb-[18px] max-w-[460px]">
-                    You&rsquo;ve completed all test sections. Your results will be reviewed and made available soon.
-                  </p>
-                  <button
-                    onClick={() => router.push('/test-complete')}
-                    className="font-inter font-semibold text-[13.5px] text-white bg-ftm-red hover:bg-[#C51F35] rounded-md px-5 py-3 shadow-redglow transition-colors"
-                  >
-                    View Progress
-                  </button>
-                </>
-              ) : (
-                <>
-                  <span className="font-inter font-bold text-[10.5px] tracking-[.1em] uppercase text-ftm-redsoft">Registered</span>
-                  <h2 className="font-grotesk font-bold text-[21px] text-ftm-ink my-2">Your test awaits</h2>
-                  <p className="font-inter text-sm leading-relaxed text-[#9BA6AD] mb-[18px] max-w-[460px]">
-                    You&rsquo;re booked for <strong className="text-ftm-ink">{bookingDetails.selectedDate}, 10:00 AM</strong> at ALU Kigali. The portal unlocks on your test day.
-                  </p>
-                  <button
-                    onClick={() => router.push('/test-portal')}
-                    className="font-inter font-semibold text-[13.5px] text-white bg-ftm-red hover:bg-[#C51F35] rounded-md px-5 py-3 shadow-redglow transition-colors"
-                  >
-                    Go to Test Portal
-                  </button>
-                </>
-              )}
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-12 items-start">
+          <div>
+            {/* The single action for this state */}
+            <div className="border-t-2 border-ftm-crimson bg-ftm-card px-6 py-7 mb-12">
+              <p className="font-inter font-bold text-[11px] tracking-[.14em] uppercase text-ftm-ochre">
+                {action.eyebrow}
+              </p>
+              <h2 className="font-grotesk font-bold text-[24px] text-ftm-ink mt-2 mb-3">
+                {action.heading}
+              </h2>
+              <p className="font-inter text-[15px] leading-relaxed text-ftm-mut mb-6 max-w-measure">
+                {action.body}
+              </p>
+              <button
+                onClick={() => router.push(action.href)}
+                className="font-inter font-bold text-[15px] text-white bg-ftm-crimson hover:bg-ftm-crimsondeep px-6 py-3.5 transition-colors"
+              >
+                {action.label}
+              </button>
             </div>
 
-            {/* Test sections */}
-            <div>
-              <h3 className="font-grotesk font-semibold text-[15px] text-ftm-ink mb-3">Test sections</h3>
-              <div className="space-y-2.5">
-                {testSections.map((section) => (
-                  <div
-                    key={section.name}
-                    className="flex items-center gap-3.5 bg-ftm-card border border-white/[.08] rounded-lg px-4 py-3.5"
-                  >
-                    <div className="w-[38px] h-[38px] rounded-lg bg-ftm-slate/[.12] flex items-center justify-center flex-none">
-                      {sectionIcons[section.name]}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-inter font-semibold text-sm text-ftm-ink">{section.name}</div>
-                      <div className="font-inter text-[12.5px] text-ftm-mut truncate">{section.description}</div>
-                    </div>
-                    <span className="font-inter font-semibold text-[12.5px] text-ftm-dim whitespace-nowrap">
-                      {section.duration}
-                    </span>
-                  </div>
-                ))}
-              </div>
+            {/* Sections — a table, with headers, not three cards */}
+            <h2 className="font-grotesk font-bold text-[17px] text-ftm-ink mb-4">
+              What the exam involves
+            </h2>
+            <div className="overflow-x-auto">
+              <table className="w-full font-inter text-[14px] border-collapse min-w-[420px]">
+                <caption className="sr-only">The three sections of the Futurimi exam</caption>
+                <thead>
+                  <tr>
+                    <th scope="col" className="text-left font-semibold text-[10px] tracking-[.14em] uppercase text-ftm-dim py-2 pr-4 border-b border-ftm-line2">
+                      Section
+                    </th>
+                    <th scope="col" className="text-left font-semibold text-[10px] tracking-[.14em] uppercase text-ftm-dim py-2 pr-4 border-b border-ftm-line2">
+                      What you do
+                    </th>
+                    <th scope="col" className="text-right font-semibold text-[10px] tracking-[.14em] uppercase text-ftm-dim py-2 border-b border-ftm-line2">
+                      Length
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {TEST_SECTIONS.map((section) => (
+                    <tr key={section.name}>
+                      <th scope="row" className="text-left py-3.5 pr-4 border-b border-ftm-line align-top">
+                        <span className="inline-flex items-center gap-3 font-semibold text-ftm-ink">
+                          <span className="text-ftm-slate">{sectionIcons[section.name]}</span>
+                          {section.name}
+                        </span>
+                      </th>
+                      <td className="py-3.5 pr-4 border-b border-ftm-line align-top text-ftm-mut">
+                        {section.description}
+                      </td>
+                      <td className="py-3.5 border-b border-ftm-line align-top text-right text-ftm-ink tabular-nums whitespace-nowrap">
+                        {section.duration}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-[18px]">
-            {/* Profile card */}
-            <div className="bg-ftm-card border border-white/[.08] rounded-[10px] overflow-hidden">
-              <div className="bg-ftm-up px-[18px] py-3">
-                <span className="font-inter font-semibold text-[13px] text-ftm-ink">Your profile</span>
-              </div>
-              <div className="p-[18px]">
-                <div className="flex items-center gap-2.5 mb-3.5">
-                  <div className="w-9 h-9 rounded-full bg-ftm-slate/[.14] flex items-center justify-center flex-none">
-                    <span className="font-grotesk font-bold text-[13px] text-ftm-slate">
-                      {userData.name.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
-                  <div className="min-w-0">
-                    <div className="font-inter font-semibold text-[13.5px] text-ftm-ink truncate">{userData.name}</div>
-                    <div className="font-inter text-xs text-ftm-mut truncate">{userData.email}</div>
-                  </div>
-                </div>
-                <div className="border-t border-white/[.07] pt-3 space-y-2.5 text-sm">
-                  <div className="flex justify-between items-center">
-                    <span className="font-inter text-[12.5px] text-ftm-mut">EPT ID</span>
-                    <span className="font-grotesk font-semibold text-xs text-ftm-ink bg-ftm-slate/[.14] px-[7px] py-0.5 rounded">{userData.eptId}</span>
-                  </div>
-                  {bookingDetails && (
-                    <>
-                      <div className="flex justify-between items-center">
-                        <span className="font-inter text-[12.5px] text-ftm-mut">Test date</span>
-                        <span className="font-inter font-semibold text-[12.5px] text-ftm-ink">{bookingDetails.selectedDate}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="font-inter text-[12.5px] text-ftm-mut">Laptop</span>
-                        <span className="font-inter font-semibold text-[11px] text-ftm-slate bg-ftm-slate/[.14] px-2 py-[3px] rounded-full">
-                          {bookingDetails.hasLaptop ? 'Bringing own' : 'Using provided'}
-                        </span>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
+          {/* Facts — ruled, not carded */}
+          <aside>
+            <h2 className="font-grotesk font-bold text-[17px] text-ftm-ink mb-4">Your sitting</h2>
+            <dl className="ftm-facts">
+              <Fact label="Name">{userData.name}</Fact>
+              <Fact label="EPT ID">
+                <span data-figure>{userData.eptId}</span>
+              </Fact>
+              <Fact label="Email">
+                <span className="break-all">{userData.email}</span>
+              </Fact>
+              <Fact label="Test date">{bookingDetails?.selectedDate || 'Not booked'}</Fact>
+              {bookingDetails && (
+                <Fact label="Laptop">
+                  {bookingDetails.hasLaptop ? 'Bringing my own' : 'Using a provided one'}
+                </Fact>
+              )}
+              <Fact label="Status">{status}</Fact>
+            </dl>
 
-            {/* Quick links */}
-            <div className="bg-ftm-card border border-white/[.08] rounded-[10px] p-[18px]">
-              <span className="font-inter font-semibold text-[13px] text-ftm-ink">Quick links</span>
-              <div className="flex flex-col mt-2.5">
-                {bookingDetails && !hasCompletedTests && (
-                  <button
-                    onClick={() => router.push('/test-portal')}
-                    className="flex items-center justify-between py-[9px] px-0.5 text-left group"
-                  >
-                    <span className="font-inter font-medium text-[13px] text-ftm-link group-hover:text-ftm-ink transition-colors">Test portal</span>
-                    {chevron}
-                  </button>
-                )}
-                {!bookingDetails && (
-                  <button
-                    onClick={() => router.push('/booking')}
-                    className="flex items-center justify-between py-[9px] px-0.5 text-left group"
-                  >
-                    <span className="font-inter font-medium text-[13px] text-ftm-link group-hover:text-ftm-ink transition-colors">Book test date</span>
-                    {chevron}
-                  </button>
-                )}
-                <button
-                  onClick={() => window.open('mailto:thewritingcentre@alueducation.com')}
-                  className="flex items-center justify-between py-[9px] px-0.5 text-left group"
-                >
-                  <span className="font-inter font-medium text-[13px] text-ftm-link group-hover:text-ftm-ink transition-colors">Contact support</span>
-                  {chevron}
-                </button>
-              </div>
-            </div>
-
-            {/* Important notice */}
-            <div className="bg-ftm-amber/10 border border-ftm-amber/30 rounded-[10px] p-4">
-              <span className="font-inter font-semibold text-[13px] text-ftm-amber">Important</span>
-              <p className="font-inter text-[12.5px] leading-[1.55] text-ftm-amberdim mt-1.5">
-                The portal opens at 10:00 AM on your scheduled day. Make sure your connection is stable.
+            <div className="border-l-[6px] border-ftm-ochre pl-4 py-1 mt-8">
+              <p className="font-inter font-bold text-[14px] text-ftm-ochre mb-1">On the day</p>
+              <p className="font-inter text-[14px] leading-relaxed text-ftm-mut">
+                The portal opens at 10:00 and the exam runs in fullscreen. Leaving fullscreen
+                or switching tabs is recorded.{' '}
+                <Link href="/privacy" className="text-ftm-ink underline underline-offset-4 hover:text-ftm-ochre transition-colors">
+                  What the exam records
+                </Link>
+                .
               </p>
             </div>
-          </div>
+
+            {!bookingDetails && (
+              <Link
+                href="/booking"
+                className="inline-block mt-8 font-inter text-[14px] text-ftm-link underline underline-offset-4 hover:text-ftm-ink transition-colors"
+              >
+                Book a test date
+              </Link>
+            )}
+          </aside>
         </div>
       </div>
+
+      <PaperFooter tone="night" />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 // components/ErrorBoundary.js — Global error boundary with retry
 import React from 'react';
-import { Button, Card } from './UIDesignSystem';
+import { Button } from './UIDesignSystem';
 
 export default class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -25,26 +25,31 @@ export default class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-          <Card className="p-8 max-w-md w-full text-center" hover={false}>
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.996-.833-2.767 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-              </svg>
+        // This screen was the one surface still using raw Tailwind defaults —
+        // bg-gray-50, bg-red-100, text-gray-900 — so the global error state of
+        // a dark product rendered as a light grey page with a red medallion.
+        // It now looks like the rest of the portal, which matters most here:
+        // the moment something breaks is the worst moment to look unfamiliar.
+        <div className="min-h-screen bg-ftm-night flex items-center px-6">
+          <div className="w-full max-w-shell mx-auto">
+            <div className="max-w-measure border-l-[6px] border-ftm-crimson pl-6 py-2" role="alert">
+              <h1 className="font-grotesk font-bold text-[28px] text-ftm-ink mb-3">
+                Something went wrong
+              </h1>
+              <p className="font-inter text-[16px] leading-relaxed text-ftm-mut mb-2">
+                The page stopped working. Nothing you have already submitted is affected.
+              </p>
+              <p className="font-inter text-[16px] leading-relaxed text-ftm-mut mb-7">
+                Try again. If you are mid-exam, tell an invigilator now rather than reloading.
+              </p>
+              <div className="flex flex-wrap items-center gap-6">
+                <Button variant="primary" onClick={this.handleRetry}>Try again</Button>
+                <Button variant="ghost" onClick={() => window.location.href = '/login'}>
+                  Go to sign-in
+                </Button>
+              </div>
             </div>
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Something went wrong</h2>
-            <p className="text-gray-600 mb-6">
-              An unexpected error occurred. Please try again or contact support if the problem persists.
-            </p>
-            <div className="flex justify-center space-x-3">
-              <Button variant="secondary" onClick={() => window.location.href = '/login'}>
-                Go to Login
-              </Button>
-              <Button variant="primary" onClick={this.handleRetry}>
-                Try Again
-              </Button>
-            </div>
-          </Card>
+          </div>
         </div>
       );
     }

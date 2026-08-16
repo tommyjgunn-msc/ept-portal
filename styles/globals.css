@@ -7,7 +7,6 @@
   html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    scroll-behavior: smooth;
   }
 
   body {
@@ -17,42 +16,129 @@
 
   h1, h2, h3, h4 {
     @apply font-grotesk;
+    text-wrap: balance;
   }
 
-  /* Better focus rings for accessibility */
+  /* Figures line up in columns everywhere. Scores, IDs, counts, timers and
+     durations are the bulk of what this product displays, and proportional
+     numerals make a column of them impossible to compare by eye. */
+  table, time, output, [data-figure] {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* GOV.UK-style focus: a thick ochre outline that is visible on both the dark
+     ground and the paper ground, plus an offset so it never sits on the
+     control's own border. Never remove this without a replacement. */
   *:focus-visible {
-    @apply outline-none ring-2 ring-ftm-red ring-offset-2 ring-offset-ftm-night;
+    outline: 3px solid theme("colors.ftm.ochre");
+    outline-offset: 2px;
+    border-radius: 0;
   }
 
-  /* Smooth page transitions */
-  main {
-    animation: fadeIn 0.3s ease-out;
+  input, textarea, select {
+    @apply bg-ftm-night text-ftm-ink border-ftm-line;
+    color-scheme: dark;
+  }
+  input::placeholder, textarea::placeholder {
+    @apply text-ftm-dim;
+  }
+
+  /* Controls on a paper ground opt in explicitly. */
+  .on-paper input,
+  .on-paper textarea,
+  .on-paper select {
+    @apply bg-white text-ftm-panel;
+    color-scheme: light;
+  }
+  .on-paper input::placeholder,
+  .on-paper textarea::placeholder {
+    @apply text-ftm-mutl;
   }
 }
 
 @layer components {
-  /* Custom scrollbar for date pickers and lists */
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 6px;
+  /* ── Imigongo register ──────────────────────────────────────────────────
+     The one ornament in the system: a row of crimson diamonds on an ink field,
+     after the Rwandan relief-painting tradition of Gisaka in the Eastern
+     Province, where the motifs are diamonds and zigzags and the ground is
+     black. Two colours, not four — an earlier four-colour version turned to
+     visual noise below about 20px and the ochre vanished against paper.
+
+     It marks the top edge of a page and nothing else. Never a background fill.
+     The band is deliberately dark on both grounds so one definition works
+     everywhere. */
+  .ftm-register {
+    /* Default ground is paper, because the default page is the dark one — the
+       band has to contrast with the page or it reads as fringe rather than a
+       deliberate rule. `.ftm-register-paper` inverts it for the light pages. */
+    --reg-figure: theme("colors.ftm.crimson");
+    --reg-ground: theme("colors.ftm.paper");
+    --reg-tile: 20px;
+    height: 10px;
+    background-color: var(--reg-ground);
+    background-image:
+      linear-gradient(45deg,  var(--reg-figure) 25%, transparent 25%),
+      linear-gradient(-45deg, var(--reg-figure) 25%, transparent 25%),
+      linear-gradient(45deg,  transparent 75%, var(--reg-figure) 75%),
+      linear-gradient(-45deg, transparent 75%, var(--reg-figure) 75%);
+    background-size: var(--reg-tile) var(--reg-tile);
   }
-  .custom-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
+  .ftm-register-paper {
+    --reg-ground: #14181B;
   }
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    @apply bg-white/10 rounded-full;
+  .ftm-register-tall {
+    --reg-tile: 28px;
+    height: 14px;
   }
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    @apply bg-white/20;
+
+  /* ── Ruled data block ───────────────────────────────────────────────────
+     Replaces the row of bordered stat cards. Label left, figure right, one
+     hairline between. Maximum data-ink, after Tufte. */
+  .ftm-facts {
+    @apply border-t border-ftm-line2;
   }
+  .ftm-facts > div {
+    @apply flex items-baseline justify-between gap-4 py-2 border-b border-ftm-line;
+  }
+  .ftm-facts dt, .ftm-facts .k {
+    @apply font-inter text-[13px] text-ftm-mut;
+  }
+  .ftm-facts dd, .ftm-facts .v {
+    @apply font-inter font-semibold text-[13px] text-ftm-ink m-0 text-right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── Status ─────────────────────────────────────────────────────────────
+     Never colour alone: a square swatch plus the word. Square, not a pill. */
+  .ftm-status {
+    @apply inline-flex items-center gap-2 font-inter text-[12px] text-ftm-mut;
+  }
+  .ftm-status::before {
+    content: "";
+    @apply inline-block w-2 h-2 flex-none;
+    background: currentColor;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+  .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+  .custom-scrollbar::-webkit-scrollbar-thumb { @apply bg-ftm-line2; }
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+/* Skeletons breathe; nothing else on the screen moves during an exam. */
+@keyframes ftmFade {
+  0%, 100% { opacity: .5; }
+  50% { opacity: .9; }
+}
+.ftm-skeleton {
+  @apply bg-ftm-up;
+  animation: ftmFade 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

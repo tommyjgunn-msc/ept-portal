@@ -1,6 +1,16 @@
-// pages/test-results.js
+// pages/test-result.js — the full breakdown.
+//
+// This page had no loading or error design at all: bare `<div>Loading your
+// results...</div>` and `<div>Error: …</div>`, unstyled, on a dark body. It now
+// uses the same skeleton and error patterns as the rest of the portal, and the
+// scores are a table with tabular figures rather than three progress bars.
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
+import { Button } from '../components/UIDesignSystem';
+import { SkeletonTable, ErrorState } from '../components/LoadingStates';
+import PaperFooter from '../components/PaperFooter';
+
+const TEST_TYPES = ['reading', 'writing', 'listening'];
 
 export default function TestResults() {
   const [results, setResults] = useState(null);
@@ -18,12 +28,11 @@ export default function TestResults() {
         }
 
         const response = await fetch(`/api/test-results?student_id=${JSON.parse(userData).eptId}`);
-        if (!response.ok) throw new Error('Failed to fetch results');
-        
-        const data = await response.json();
-        setResults(data);
-      } catch (error) {
-        setError(error.message);
+        if (!response.ok) throw new Error('We could not load your results.');
+
+        setResults(await response.json());
+      } catch (err) {
+        setError(err.message || 'We could not load your results.');
       } finally {
         setLoading(false);
       }
@@ -32,75 +41,114 @@ export default function TestResults() {
     fetchResults();
   }, [router]);
 
-  if (loading) return <div>Loading your results...</div>;
-  if (error) return <div>Error: {error}</div>;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-ftm-night">
+        <div className="max-w-shell mx-auto px-6 sm:px-10 py-12" aria-busy="true">
+          <div className="ftm-skeleton h-8 w-56 mb-3" />
+          <div className="ftm-skeleton h-4 w-72 mb-10" />
+          <SkeletonTable rows={3} columns={4} className="max-w-[720px]" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-ftm-night flex items-center">
+        <div className="w-full max-w-shell mx-auto px-6 sm:px-10">
+          <ErrorState
+            title="We could not load your results"
+            message={`${error} Your submitted work is not affected.`}
+            onRetry={() => router.reload()}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-ftm-night py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-3xl mx-auto">
-        <div className="bg-ftm-card border border-white/[.08] rounded-[10px] overflow-hidden">
-          <div className="px-4 py-5 border-b border-white/[.07] sm:px-6 bg-ftm-up">
-            <h2 className="font-grotesk text-2xl font-bold text-ftm-ink">
-              Your Futurimi results
-            </h2>
-          </div>
-          
-          <div className="px-4 py-5 sm:p-6">
-            <div className="space-y-6">
-              {['reading', 'writing', 'listening'].map((type) => {
-                const testResult = results[type];
-                return (
-                  <div key={type} className="border-b border-white/[.07] pb-4 last:border-b-0">
-                    <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-lg font-medium text-ftm-ink capitalize">
-                        {type} Test
-                      </h3>
-                      {testResult && testResult.attempts > 1 && (
-                        <span className="text-sm text-ftm-dim">
-                          {testResult.attempts} attempts
-                        </span>
-                      )}
-                    </div>
-                    {testResult ? (
-                      <div className="space-y-2">
-                        <div className="flex justify-between">
-                          <span className="text-ftm-mut">Score:</span>
-                          <span className="font-medium text-ftm-ink">
-                            {type === 'writing' 
-                              ? 'Pending Review'
-                              : `${testResult.score} / ${testResult.total_points}`
-                            }
+    <div className="min-h-screen bg-ftm-night flex flex-col">
+      <div className="flex-1 w-full max-w-shell mx-auto px-6 sm:px-10 py-12">
+        <div className="max-w-[720px]">
+          <h1 className="font-grotesk font-bold text-[30px] text-ftm-ink mb-2">Your results</h1>
+          <p className="font-inter text-[15px] text-ftm-mut mb-10 max-w-measure">
+            Reading and listening are marked automatically. Writing is checked by Writing Centre
+            staff before it is final.
+          </p>
+
+          <div className="overflow-x-auto">
+            <table className="w-full font-inter text-[14px] border-collapse min-w-[520px]">
+              <caption className="sr-only">Your marks for each section</caption>
+              <thead>
+                <tr>
+                  <th scope="col" className="text-left font-semibold text-[10px] tracking-[.14em] uppercase text-ftm-dim py-2 pr-4 border-b border-ftm-line2">
+                    Section
+                  </th>
+                  <th scope="col" className="text-left font-semibold text-[10px] tracking-[.14em] uppercase text-ftm-dim py-2 pr-4 border-b border-ftm-line2">
+                    Submitted
+                  </th>
+                  <th scope="col" className="text-right font-semibold text-[10px] tracking-[.14em] uppercase text-ftm-dim py-2 pr-4 border-b border-ftm-line2">
+                    Attempts
+                  </th>
+                  <th scope="col" className="text-right font-semibold text-[10px] tracking-[.14em] uppercase text-ftm-dim py-2 border-b border-ftm-line2">
+                    Mark
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {TEST_TYPES.map((type) => {
+                  const testResult = results?.[type];
+
+                  return (
+                    <tr key={type}>
+                      <th scope="row" className="text-left py-4 pr-4 border-b border-ftm-line align-top font-semibold text-ftm-ink capitalize">
+                        {type}
+                      </th>
+                      <td className="py-4 pr-4 border-b border-ftm-line align-top text-ftm-mut tabular-nums whitespace-nowrap">
+                        {testResult?.submission_date
+                          ? new Date(testResult.submission_date).toLocaleString('en-GB', {
+                              day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
+                            })
+                          : <span className="text-ftm-dim">Not submitted</span>}
+                      </td>
+                      <td className="py-4 pr-4 border-b border-ftm-line align-top text-right tabular-nums text-ftm-mut">
+                        {testResult?.attempts > 1 ? testResult.attempts : '1'}
+                      </td>
+                      <td className="py-4 border-b border-ftm-line align-top text-right whitespace-nowrap">
+                        {!testResult ? (
+                          <span className="text-ftm-dim">—</span>
+                        ) : type === 'writing' && testResult.score === null ? (
+                          <span className="ftm-status font-semibold text-ftm-ochre justify-end">Being marked</span>
+                        ) : (
+                          <span className="font-grotesk font-bold text-[17px] text-ftm-ink tabular-nums">
+                            {testResult.score}<span className="text-ftm-dim font-normal">/{testResult.total_points}</span>
                           </span>
-                        </div>
-                        {type !== 'writing' && (
-                          <div className="w-full bg-white/10 rounded-full h-2">
-                            <div 
-                              className="bg-ftm-green rounded-full h-2"
-                              style={{ 
-                                width: `${(testResult.score / testResult.total_points) * 100}%` 
-                              }}
-                            />
-                          </div>
                         )}
-                        <div className="flex justify-between text-sm text-ftm-dim">
-                          <span>Completed:</span>
-                          <span>
-                            {new Date(testResult.submission_date).toLocaleString()}
-                          </span>
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="text-ftm-dim">
-                        No results available
-                      </p>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="border-l-[6px] border-ftm-ochre pl-4 py-1 mt-10">
+            <p className="font-inter text-[15px] leading-relaxed text-ftm-mut">
+              A mark shown here is provisional until the Writing Centre releases results. If a
+              section looks wrong, email them with your EPT ID and the date you sat.
+            </p>
+          </div>
+
+          <div className="mt-12 pt-8 border-t border-ftm-line">
+            <Button variant="ghost" onClick={() => router.push('/home')}>
+              Back to my dashboard
+            </Button>
           </div>
         </div>
       </div>
+
+      <PaperFooter tone="night" />
     </div>
   );
 }

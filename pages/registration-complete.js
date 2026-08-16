@@ -1,9 +1,20 @@
-// pages/registration-complete.js
+// pages/registration-complete.js — the booking confirmation.
+//
+// This page had a green circle that pulsed, containing a smaller green circle,
+// containing a tick that bounced, with a third ring pinging outward around all
+// of it. Three simultaneous animations to say one thing: you are booked.
+//
+// It is now a confirmation panel of the kind you would print and put in a bag:
+// the date large, the facts ruled, and what happens next as a short list. It
+// also prints properly, which the old version did not.
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import { Card, Button, Badge, Alert } from '../components/UIDesignSystem';
+import { Button } from '../components/UIDesignSystem';
 import { AppSkeleton } from '../components/LoadingStates';
 import { useToast } from '../components/ToastContext';
+import PaperFooter from '../components/PaperFooter';
+
+const SUPPORT_EMAIL = 'thewritingcentre@alueducation.com';
 
 export default function RegistrationComplete() {
   const [bookingDetails, setBookingDetails] = useState(null);
@@ -16,8 +27,8 @@ export default function RegistrationComplete() {
     if (!details) {
       addToast({
         type: 'error',
-        title: 'Session Expired',
-        message: 'Please log in again to view your registration.'
+        title: 'Session expired',
+        message: 'Sign in again to see your booking.',
       });
       router.push('/login');
       return;
@@ -26,203 +37,81 @@ export default function RegistrationComplete() {
     setLoading(false);
   }, [router, addToast]);
 
-  const handleReturnHome = () => {
-    addToast({
-      type: 'success',
-      title: 'Redirecting',
-      message: 'Taking you to your dashboard...'
-    });
-    router.push('/');
-  };
-
-  const handleContactSupport = () => {
-    window.open('mailto:thewritingcentre@alueducation.com?subject=EPT Registration Support');
-    addToast({
-      type: 'info',
-      title: 'Opening Email',
-      message: 'Your email client should open with our support address.'
-    });
-  };
-
-  if (loading) {
-    return <AppSkeleton />;
-  }
+  if (loading) return <AppSkeleton />;
 
   return (
-    <div className="min-h-screen bg-ftm-night py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-2xl mx-auto">
-        {/* Success Animation Container */}
-        <div className="text-center mb-8">
-          <div className="relative inline-block">
-            {/* Animated Success Icon */}
-            <div className="w-20 h-20 bg-ftm-green/[.14] rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
-              <div className="w-16 h-16 bg-ftm-green rounded-full flex items-center justify-center">
-                <svg className="w-8 h-8 text-white animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-            </div>
-            
-            {/* Celebration rings */}
-            <div className="absolute inset-0 animate-ping">
-              <div className="w-20 h-20 border-4 border-ftm-green/30 rounded-full"></div>
-            </div>
+    <div className="min-h-screen bg-ftm-night flex flex-col">
+      <div className="flex-1 w-full max-w-shell mx-auto px-6 sm:px-10 py-12">
+        <div className="max-w-[640px]">
+          <div className="border-t-2 border-ftm-green pt-6 mb-10">
+            <p className="font-inter font-bold text-[11px] tracking-[.14em] uppercase text-ftm-green mb-3">
+              Booked
+            </p>
+            <h1 className="font-grotesk font-bold text-[34px] leading-tight text-ftm-ink mb-3">
+              {bookingDetails.selectedDate}
+            </h1>
+            <p className="font-inter text-[19px] text-ftm-mut">
+              10:00 at ALU Kigali. Allow about three hours.
+            </p>
           </div>
 
-          <h1 className="font-grotesk text-4xl font-bold text-ftm-ink mb-4">
-            Registration complete
-          </h1>
-          <p className="text-xl text-ftm-mut">
-            Thank you for registering for Futurimi, ALU&rsquo;s English Proficiency Test
-          </p>
-        </div>
-
-        {/* Main Registration Card */}
-        <Card className="p-8 mb-6" elevation="xl">
-          <div className="text-center mb-8">
-            <h2 className="font-grotesk text-2xl font-semibold text-ftm-ink mb-4">
-              Your Test is Scheduled
-            </h2>
-            
-            <div className="bg-ftm-up border border-white/[.07] rounded-[10px] p-6 mb-6">
-              <div className="flex items-center justify-center mb-4">
-                <svg className="w-8 h-8 text-ftm-slate mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3a4 4 0 118 0v4m-4 8a3 3 0 100-6 3 3 0 000 6z" />
-                </svg>
-                <p className="text-lg text-ftm-slate">Test Date & Time</p>
-              </div>
-              
-              <div className="text-center">
-                <p className="font-grotesk text-3xl font-bold text-ftm-ink mb-2">
-                  {bookingDetails.selectedDate}
-                </p>
-                <Badge variant="primary" size="lg">
-                  10:00 AM - 1:00 PM
-                </Badge>
-              </div>
+          <h2 className="font-grotesk font-bold text-[17px] text-ftm-ink mb-4">Your booking</h2>
+          <dl className="ftm-facts mb-10">
+            <div><dt className="k">Name</dt><dd className="v">{bookingDetails.name}</dd></div>
+            <div><dt className="k">Email</dt><dd className="v break-all">{bookingDetails.email}</dd></div>
+            <div><dt className="k">Date</dt><dd className="v">{bookingDetails.selectedDate}</dd></div>
+            <div><dt className="k">Starts</dt><dd className="v">10:00</dd></div>
+            <div><dt className="k">Place</dt><dd className="v">ALU Kigali</dd></div>
+            <div>
+              <dt className="k">Laptop</dt>
+              <dd className="v">{bookingDetails.hasLaptop ? 'Bringing my own' : 'Using a provided one'}</dd>
             </div>
+            {bookingDetails.bookingDate && (
+              <div>
+                <dt className="k">Booked on</dt>
+                <dd className="v">
+                  {new Date(bookingDetails.bookingDate).toLocaleDateString('en-GB', {
+                    day: '2-digit', month: 'long', year: 'numeric',
+                  })}
+                </dd>
+              </div>
+            )}
+          </dl>
 
-            <Alert type="info" title="Important Reminders">
-              <ul className="text-left space-y-2 mt-2">
-                <li>• Please arrive 15 minutes before your test time</li>
-                <li>• Bring a valid ID and your confirmation details</li>
-                <li>• {bookingDetails.hasLaptop ? 'Remember to bring your laptop' : 'A laptop will be provided for you'}</li>
-                <li>• The test portal will be available on your test date at 10:00 AM</li>
-              </ul>
-            </Alert>
-          </div>
+          <h2 className="font-grotesk font-bold text-[17px] text-ftm-ink mb-4">On the day</h2>
+          <ul className="list-none p-0 m-0 border-t border-ftm-line2 mb-10">
+            {[
+              'Arrive 15 minutes early.',
+              'Bring your student ID.',
+              bookingDetails.hasLaptop
+                ? 'Bring your laptop, charged, with its charger.'
+                : 'A laptop will be waiting for you.',
+              'The portal unlocks at 10:00 on the day and not before.',
+            ].map((item) => (
+              <li key={item} className="font-inter text-[16px] leading-relaxed text-ftm-mut py-3 border-b border-ftm-line">
+                {item}
+              </li>
+            ))}
+          </ul>
 
-          {/* Registration Details */}
-          <div className="bg-ftm-night border border-white/[.08] rounded-lg p-6 mb-6">
-            <h3 className="font-grotesk text-lg font-semibold text-ftm-ink mb-4">Registration Details</h3>
-            
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <p className="text-sm text-ftm-mut">Name</p>
-                <p className="font-medium text-ftm-ink">{bookingDetails.name}</p>
-              </div>
-              <div>
-                <p className="text-sm text-ftm-mut">Email</p>
-                <p className="font-medium text-ftm-ink">{bookingDetails.email}</p>
-              </div>
-              <div>
-                <p className="text-sm text-ftm-mut">Equipment</p>
-                <Badge variant={bookingDetails.hasLaptop ? 'success' : 'secondary'}>
-                  {bookingDetails.hasLaptop ? 'Bringing Own Laptop' : 'Using Provided Laptop'}
-                </Badge>
-              </div>
-              <div>
-                <p className="text-sm text-ftm-mut">Registration Date</p>
-                <p className="font-medium text-ftm-ink">
-                  {new Date(bookingDetails.bookingDate).toLocaleDateString()}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="space-y-4">
-            <Button
-              onClick={handleReturnHome}
-              variant="primary"
-              size="lg"
-              className="w-full"
-              icon={
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                </svg>
-              }
-            >
-              Go to Dashboard
+          <div className="flex flex-wrap items-center gap-6 pt-8 border-t border-ftm-line print:hidden">
+            <Button variant="primary" onClick={() => router.push('/home')}>
+              Back to my dashboard
             </Button>
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Button
-                onClick={handleContactSupport}
-                variant="outline"
-                className="w-full"
-                icon={
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                }
-              >
-                Contact Support
-              </Button>
-              
-              <Button
-                onClick={() => window.print()}
-                variant="ghost"
-                className="w-full"
-                icon={
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                  </svg>
-                }
-              >
-                Print Details
-              </Button>
-            </div>
+            <Button variant="ghost" onClick={() => window.print()}>
+              Print this page
+            </Button>
+            <a
+              href={`mailto:${SUPPORT_EMAIL}?subject=Futurimi booking`}
+              className="font-inter text-[15px] text-ftm-link underline underline-offset-4 hover:text-ftm-ink transition-colors"
+            >
+              Contact the Writing Centre
+            </a>
           </div>
-        </Card>
-
-        {/* Additional Information */}
-        <Card className="p-6">
-          <h3 className="font-grotesk text-lg font-semibold text-ftm-ink mb-4">What happens next?</h3>
-          
-          <div className="space-y-4">
-            <div className="flex items-start">
-              <div className="flex-shrink-0 w-8 h-8 bg-ftm-slate/[.14] rounded-full flex items-center justify-center mr-3">
-                <span className="text-sm font-semibold text-ftm-slate">1</span>
-              </div>
-              <div>
-                <h4 className="font-medium text-ftm-ink">Confirmation Email</h4>
-                <p className="text-sm text-ftm-mut">You'll receive a confirmation email with all the details shortly.</p>
-              </div>
-            </div>
-            
-            <div className="flex items-start">
-              <div className="flex-shrink-0 w-8 h-8 bg-ftm-slate/[.14] rounded-full flex items-center justify-center mr-3">
-                <span className="text-sm font-semibold text-ftm-slate">2</span>
-              </div>
-              <div>
-                <h4 className="font-medium text-ftm-ink">Test Day Access</h4>
-                <p className="text-sm text-ftm-mut">Return to this portal on your test date to access the test materials.</p>
-              </div>
-            </div>
-            
-            <div className="flex items-start">
-              <div className="flex-shrink-0 w-8 h-8 bg-ftm-slate/[.14] rounded-full flex items-center justify-center mr-3">
-                <span className="text-sm font-semibold text-ftm-slate">3</span>
-              </div>
-              <div>
-                <h4 className="font-medium text-ftm-ink">Results</h4>
-                <p className="text-sm text-ftm-mut">Your results will be available here after the test is completed and reviewed.</p>
-              </div>
-            </div>
-          </div>
-        </Card>
+        </div>
       </div>
+
+      <PaperFooter tone="night" />
     </div>
   );
 }
